@@ -38,7 +38,7 @@ CFLAGS			+= $(WARNINGS)
 CFLAGS			+= -Dtimegm=mktime
 
 CXXFLAGS		+= -I$(SYSROOT)/usr/include
-CXXFLAGS		+= -std=c++11
+CXXFLAGS		+= -std=c++20
 CXXGLAGS		+= $(WARNINGS)
 CXXFLAGS		+= -Dtimegm=mktime
 
