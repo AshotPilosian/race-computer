@@ -5,37 +5,39 @@
 #include <cstdint>
 #include <cstring>
 
+#include "spdlog/spdlog.h"
 #include "../minmea/minmea.h"
 
 #include "GPS.h"
 
 GPS::GPS() {
-
+    nmeaBufferCurrentIdx = 0;
+    nmeaBufferStartValid = false;
 }
 
 void GPS::setup() {
-    printf("Setting up GPS\n");
+    spdlog::info("Setting up GPS");
 
     struct wiringXSerial_t wiringXSerial = {9600, 8, 'n', 1, 'n'};
     int fd;
 
     if ((fd = wiringXSerialOpen("/dev/ttyS1", wiringXSerial)) < 0) {
-        printf("Open serial device failed: %d\n", fd);
+        spdlog::critical("Open serial device failed: {}", fd);
         wiringXGC();
 
         throw std::runtime_error("Can not open GPS UART.");
     }
     uartFd = fd;
 
-    printf("GPS UART setup completed. FD: %d\n", fd);
+    spdlog::info("GPS UART setup completed. FD: {}", fd);
 }
 
 void GPS::shutdown() {
-    printf("Closing GPS connection\n");
+    spdlog::info("Closing GPS connection");
 
     wiringXSerialClose(uartFd);
 
-    printf("GPS connection closed\n");
+    spdlog::info("GPS connection closed");
 }
 
 uint8_t GPS::calculateChecksum(const char *sentence) {
@@ -76,110 +78,112 @@ bool GPS::validateChecksum(const char *sentence) {
     return calculatedChecksum == extractedChecksum.value();
 }
 
-void GPS::start() {
-    char nmea_buffer[100];
-    int available_bytes = 0, current_buffer_idx = 0, nmea_counter = 0;
-    bool nmea_start_valid = false;
-    while (nmea_counter < 1000) {
-        available_bytes = wiringXSerialDataAvail(uartFd);
-        if (available_bytes > 0) {
-            //printf("Received bytes: %d\n", available_bytes);
+void GPS::readAvailable() {
+    int availableBytes = wiringXSerialDataAvail(uartFd);
+    if (availableBytes > 0) {
+        spdlog::trace("Received bytes: {}", availableBytes);
+        while (availableBytes--) {
+            char c = wiringXSerialGetChar(uartFd);
+            spdlog::trace("Reading char: {}", c);
 
-            while (available_bytes--) {
-                // printf("Reading char: ");
-                char c = wiringXSerialGetChar(uartFd);
-                // printf("%c; ", c);
+            if (c == '$') {
+                spdlog::trace("Nmea start detected");
+                nmeaBuffer[nmeaBufferCurrentIdx] = '\0';
+                if (nmeaBufferStartValid) {
+                    bool validChecksum = validateChecksum(nmeaBuffer);
+                    if (validChecksum) {
+                        spdlog::trace("NMEA: {}", nmeaBuffer);
+                        unprocessedUpdate = PositionUpdate{nmeaBuffer, 0.0, 0.0};
 
-                if (c == '$') {
-                    // printf("Nmea start detected\n");
-                    nmea_buffer[current_buffer_idx] = '\0';
-                    if (nmea_start_valid) {
-                        bool is_valid = validateChecksum(nmea_buffer);
-
-                        // printf("NMEA: %s", nmea_buffer);
-                        // printf("Checksum: %02X; Valid: %s\n\n", calculated_checksum, is_valid ? "TRUE" : "FALSE");
-
-                        if (is_valid) {
-                            // printf("NMEA: %s", nmea_buffer);
-
-                            switch (minmea_sentence_id(nmea_buffer, false)) {
-                                case MINMEA_SENTENCE_VTG: {
-                                    struct minmea_sentence_vtg frame;
-                                    if (minmea_parse_vtg(&frame, nmea_buffer)) {
-                                        printf("Speed: %f\n",
-                                               minmea_tofloat(&frame.speed_kph));
-                                    } else {
-                                        printf("Failed to parse VTG sentence\n");
-                                    }
+                        switch (minmea_sentence_id(nmeaBuffer, false)) {
+                            case MINMEA_SENTENCE_VTG: {
+                                struct minmea_sentence_vtg frame;
+                                if (minmea_parse_vtg(&frame, nmeaBuffer)) {
+                                    unprocessedUpdate = SpeedUpdate{nmeaBuffer, minmea_tofloat(&frame.speed_kph)};
+                                } else {
+                                    spdlog::error("Failed to parse VTG sentence: {}", nmeaBuffer);
                                 }
-                                    break;
-                                case MINMEA_SENTENCE_GSA: {
-                                    struct minmea_sentence_gsa frame;
-                                    if (minmea_parse_gsa(&frame, nmea_buffer)) {
-                                        printf("HDOP: %f\n",
-                                               minmea_tofloat(&frame.hdop));
-                                    } else {
-                                        printf("Failed to parse GSA sentence\n");
-                                    }
-                                }
-                                    break;
-                                case MINMEA_SENTENCE_GLL: {
-                                    struct minmea_sentence_gll frame;
-                                    if (minmea_parse_gll(&frame, nmea_buffer)) {
-                                        printf("Latitude: %f, Longitude: %f\n",
-                                               minmea_tocoord(&frame.latitude),
-                                               minmea_tocoord(&frame.longitude));
-                                    } else {
-                                        printf("Failed to parse GLL sentence\n");
-                                    }
-                                }
-                                    break;
-                                case MINMEA_SENTENCE_RMC: {
-                                    struct minmea_sentence_rmc frame;
-                                    if (minmea_parse_rmc(&frame, nmea_buffer)) {
-                                        printf("Latitude: %f, Longitude: %f\n",
-                                               minmea_tocoord(&frame.latitude),
-                                               minmea_tocoord(&frame.longitude));
-                                    } else {
-                                        printf("Failed to parse RMC sentence\n");
-                                    }
-                                }
-                                    break;
-                                case MINMEA_SENTENCE_GGA: {
-                                    struct minmea_sentence_gga frame;
-                                    if (minmea_parse_gga(&frame, nmea_buffer)) {
-                                        printf("Latitude: %f, Longitude: %f, Altitude: %f\n",
-                                               minmea_tocoord(&frame.latitude),
-                                               minmea_tocoord(&frame.longitude),
-                                               minmea_tofloat(&frame.altitude));
-                                    } else {
-                                        printf("Failed to parse GGA sentence\n");
-                                    }
-                                }
-                                    break;
-                                default:
-                                    printf("Unknown sentence: %s\n", nmea_buffer);
-                                    break;
                             }
-
-                            // label_update_t *update_info = (label_update_t *) malloc(sizeof(label_update_t));
-                            // update_info->label = label;
-
-                            // snprintf(update_info->text, TEXT_BUF_SIZE, "%s", buf); // Create the string with the counter
-                            // printf("%s\n", update_info->text);
-
-                            // lv_async_call(update_label_text, update_info);
+                                break;
+                            case MINMEA_SENTENCE_GSA: {
+                                struct minmea_sentence_gsa frame;
+                                if (minmea_parse_gsa(&frame, nmeaBuffer)) {
+                                    unprocessedUpdate = SatellitesUpdate{nmeaBuffer, 0, minmea_tofloat(&frame.hdop)};
+                                } else {
+                                    spdlog::error("Failed to parse GSA sentence: {}", nmeaBuffer);
+                                }
+                            }
+                                break;
+                            case MINMEA_SENTENCE_GLL: {
+                                struct minmea_sentence_gll frame;
+                                if (minmea_parse_gll(&frame, nmeaBuffer)) {
+                                    unprocessedUpdate = PositionUpdate{
+                                            nmeaBuffer,
+                                            minmea_tocoord(&frame.latitude),
+                                            minmea_tocoord(&frame.longitude)
+                                    };
+                                } else {
+                                    spdlog::error("Failed to parse GLL sentence: {}", nmeaBuffer);
+                                }
+                            }
+                                break;
+                            case MINMEA_SENTENCE_RMC: {
+                                struct minmea_sentence_rmc frame;
+                                if (minmea_parse_rmc(&frame, nmeaBuffer)) {
+                                    unprocessedUpdate = PositionUpdate{
+                                            nmeaBuffer,
+                                            minmea_tocoord(&frame.latitude),
+                                            minmea_tocoord(&frame.longitude)
+                                    };
+                                } else {
+                                    spdlog::error("Failed to parse RMC sentence: {}", nmeaBuffer);
+                                }
+                            }
+                                break;
+                            case MINMEA_SENTENCE_GGA: {
+                                struct minmea_sentence_gga frame;
+                                if (minmea_parse_gga(&frame, nmeaBuffer)) {
+                                    unprocessedUpdate = PositionUpdate{
+                                            nmeaBuffer,
+                                            minmea_tocoord(&frame.latitude),
+                                            minmea_tocoord(&frame.longitude)
+                                    };
+                                } else {
+                                    spdlog::error("Failed to parse GGA sentence: {}", nmeaBuffer);
+                                }
+                            }
+                                break;
+                            default:
+                                spdlog::error("Unknown sentence: {}", nmeaBuffer);
+                                break;
                         }
 
-                        nmea_counter++;
-                    }
+                        // label_update_t *update_info = (label_update_t *) malloc(sizeof(label_update_t));
+                        // update_info->label = label;
 
-                    nmea_start_valid = true;
-                    current_buffer_idx = 0;
+                        // snprintf(update_info->text, TEXT_BUF_SIZE, "%s", buf); // Create the string with the counter
+                        // printf("%s\n", update_info->text);
+
+                        // lv_async_call(update_label_text, update_info);
+                    }
                 }
 
-                nmea_buffer[current_buffer_idx++] = c;
+                nmeaBufferCurrentIdx = 0;
+                nmeaBufferStartValid = true;
             }
+
+            nmeaBuffer[nmeaBufferCurrentIdx++] = c;
         }
+    }
+}
+
+std::optional <GpsUpdate> GPS::getUnprocessedUpdate() {
+    if (unprocessedUpdate.has_value()) {
+        GpsUpdate update = unprocessedUpdate.value();
+        unprocessedUpdate = std::nullopt;
+
+        return update;
+    } else {
+        return std::nullopt;
     }
 }

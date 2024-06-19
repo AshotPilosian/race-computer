@@ -1,14 +1,15 @@
 #include <iostream>
 #include <wiringx.h>
-#include <stdio.h>
 #include <unistd.h>
 #include <string.h>
+#include <variant>
 
+#include "spdlog/spdlog.h"
 #include "gps/GPS.h"
 #include "display/Display.h"
 
 int init_wiringX() {
-    printf("Setting up wiringX\n");
+    spdlog::info("Setting up wiringX");
 
     system("duo-pinmux -w GP2/UART1_TX && duo-pinmux -w GP3/UART1_RX");
 
@@ -17,7 +18,7 @@ int init_wiringX() {
         return 1;
     }
     sleep(1);
-    printf("wiringX setup completed\n");
+    spdlog::info("wiringX setup completed");
 
     return 0;
 }
@@ -26,31 +27,59 @@ Display display;
 GPS gps;
 
 void setup() {
-    printf("Setup started\n");
+    spdlog::info("Setup started");
 
     display.setup();
     init_wiringX();
     gps.setup();
 
-    printf("Setup finished\n");
+    spdlog::info("Setup finished");
 }
 
 void shutdown() {
-    printf("Shutdown started\n");
+    spdlog::info("Shutdown started");
 
     display.shutdown();
     init_wiringX();
     gps.shutdown();
 
-    printf("Shutdown finished\n");
+    spdlog::info("Shutdown finished");
+}
+
+void handleUpdate(const GpsUpdate &update) {
+    std::visit([](const auto &arg) {
+        if constexpr(std::is_same_v < std::decay_t < decltype(arg) > , PositionUpdate > )
+        {
+            spdlog::info("Position Update. Lat: {}; :Lon: {}; NMEA: {}", arg.nmeaSentence, arg.latitude, arg.longitude);
+        } else if constexpr(std::is_same_v < std::decay_t < decltype(arg) > , SpeedUpdate > )
+        {
+            spdlog::info("Speed Update. Speed: {}", arg.speed);
+        }
+    }, update);
 }
 
 int main() {
+    spdlog::set_level(spdlog::level::debug);
+    spdlog::set_pattern("[%H:%M:%S.%e] [%^%L%$] %v");
+
     setup();
 
-    printf("Application started\n");
-    gps.start();
-    printf("Application finished\n");
+    spdlog::info("Application started");
+    int updatedDataCounter = 0;
+    while (updatedDataCounter < 10) {
+        spdlog::trace("Main loop iteration started");
+
+        gps.readAvailable();
+        auto unprocessedUpdate = gps.getUnprocessedUpdate();
+        if (unprocessedUpdate) {
+            handleUpdate(*unprocessedUpdate);
+
+            updatedDataCounter++;
+        }
+
+        usleep(1000);
+    }
+    spdlog::info("Application finished");
 
     shutdown();
 
