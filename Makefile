@@ -36,11 +36,14 @@ CFLAGS 			+= -D_POSIX_C_SOURCE=199309L
 CFLAGS 			+= -DLOG_USE_COLOR
 CFLAGS			+= $(WARNINGS)
 CFLAGS			+= -Dtimegm=mktime
+CFLAGS 			+= -g
 
 CXXFLAGS		+= -I$(SYSROOT)/usr/include
+CXXFLAGS		+= -I./spdlog/include
 CXXFLAGS		+= -std=c++20
 CXXGLAGS		+= $(WARNINGS)
 CXXFLAGS		+= -Dtimegm=mktime
+CXXFLAGS		+= -g
 
 LDFLAGS         += -L$(SYSROOT)/lib
 LDFLAGS 		+= -L$(SYSROOT)/usr/lib
