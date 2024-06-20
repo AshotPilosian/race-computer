@@ -40,7 +40,6 @@ void shutdown() {
     spdlog::info("Shutdown started");
 
     display.shutdown();
-    init_wiringX();
     gps.shutdown();
 
     spdlog::info("Shutdown finished");
@@ -70,11 +69,13 @@ int main() {
         spdlog::trace("Main loop iteration started");
 
         gps.readAvailable();
-        auto unprocessedUpdate = gps.getUnprocessedUpdate();
-        if (unprocessedUpdate) {
-            handleUpdate(*unprocessedUpdate);
+        auto unprocessedUpdates = gps.getUnprocessedUpdates();
+        if (unprocessedUpdates) {
+            for (const auto &update: unprocessedUpdates.value()) {
+                handleUpdate(update);
 
-            updatedDataCounter++;
+                updatedDataCounter++;
+            }
         }
 
         usleep(1000);

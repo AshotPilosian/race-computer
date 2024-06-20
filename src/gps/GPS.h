@@ -6,33 +6,8 @@
 #include <cstdint>
 #include <string>
 #include <variant>
-
-struct GpsUpdateBase {
-    std::string nmeaSentence;
-};
-
-struct PositionUpdate : GpsUpdateBase {
-    float latitude;
-    float longitude;
-};
-
-struct TimeUpdate : GpsUpdateBase {
-    int hour;
-    int minute;
-    int second;
-};
-
-struct SpeedUpdate : GpsUpdateBase {
-    float speed;
-};
-
-struct SatellitesUpdate : GpsUpdateBase {
-    int numberOfSatellites;
-    float hdop;
-};
-
-using GpsUpdate = std::variant<PositionUpdate, TimeUpdate, SpeedUpdate, SatellitesUpdate>;
-
+#include <span>
+#include "GpsModels.h"
 
 class GPS {
 private:
@@ -40,13 +15,18 @@ private:
     char nmeaBuffer[100];
     int nmeaBufferCurrentIdx;
     bool nmeaBufferStartValid;
-    std::optional <GpsUpdate> unprocessedUpdate;
+
+    std::optional <GpsUpdateList> unprocessedUpdates;
 
     uint8_t calculateChecksum(const char *sentence);
 
     std::optional <uint8_t> extractChecksum(const char *sentence);
 
     bool validateChecksum(const char *sentence);
+
+    int openUartToGpsModule(unsigned int baudRate);
+
+    void writeCommandToModule(std::span<const unsigned char> commandBytes);
 
 public:
     GPS();
@@ -55,7 +35,7 @@ public:
 
     void readAvailable();
 
-    std::optional <GpsUpdate> getUnprocessedUpdate();
+    std::optional <GpsUpdateList> getUnprocessedUpdates();
 
     void shutdown();
 };

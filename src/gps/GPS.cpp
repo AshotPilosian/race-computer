@@ -4,21 +4,46 @@
 #include <stdexcept>
 #include <cstdint>
 #include <cstring>
+#include <span>
 
 #include "spdlog/spdlog.h"
 #include "../minmea/minmea.h"
 
 #include "GPS.h"
+#include "UbxCommands.h"
 
 GPS::GPS() {
     nmeaBufferCurrentIdx = 0;
     nmeaBufferStartValid = false;
 }
 
+void GPS::writeCommandToModule(std::span<const unsigned char> command) {
+    for (unsigned char ch : command) {
+        spdlog::trace("Writing command char: {}", ch);
+        wiringXSerialPutChar(uartFd, ch);
+    }
+}
+
 void GPS::setup() {
     spdlog::info("Setting up GPS");
 
-    struct wiringXSerial_t wiringXSerial = {9600, 8, 'n', 1, 'n'};
+    spdlog::debug("Opening GPS UART with baud 9600");
+    uartFd = openUartToGpsModule(9600);
+    spdlog::debug("Configure GPS module to increase baud to 115200");
+    writeCommandToModule(UBX_CFG_UART_BAUD_115200);
+
+    spdlog::debug("Closing GPS UART to re-open with higher rate");
+    wiringXSerialClose(uartFd);
+    sleep(1);
+
+    spdlog::debug("Opening GPS UART with baud 115200");
+    uartFd = openUartToGpsModule(115200);
+
+    spdlog::info("GPS UART setup completed. FD: {}", uartFd);
+}
+
+int GPS::openUartToGpsModule(unsigned int baudRate) {
+    struct wiringXSerial_t wiringXSerial = {baudRate, 8, 'n', 1, 'n'};
     int fd;
 
     if ((fd = wiringXSerialOpen("/dev/ttyS1", wiringXSerial)) < 0) {
@@ -27,9 +52,8 @@ void GPS::setup() {
 
         throw std::runtime_error("Can not open GPS UART.");
     }
-    uartFd = fd;
 
-    spdlog::info("GPS UART setup completed. FD: {}", fd);
+    return fd;
 }
 
 void GPS::shutdown() {
@@ -79,6 +103,8 @@ bool GPS::validateChecksum(const char *sentence) {
 }
 
 void GPS::readAvailable() {
+    auto updates = unprocessedUpdates.value_or(GpsUpdateList{});
+
     int availableBytes = wiringXSerialDataAvail(uartFd);
     if (availableBytes > 0) {
         spdlog::trace("Received bytes: {}", availableBytes);
@@ -93,13 +119,12 @@ void GPS::readAvailable() {
                     bool validChecksum = validateChecksum(nmeaBuffer);
                     if (validChecksum) {
                         spdlog::trace("NMEA: {}", nmeaBuffer);
-                        unprocessedUpdate = PositionUpdate{nmeaBuffer, 0.0, 0.0};
 
                         switch (minmea_sentence_id(nmeaBuffer, false)) {
                             case MINMEA_SENTENCE_VTG: {
                                 struct minmea_sentence_vtg frame;
                                 if (minmea_parse_vtg(&frame, nmeaBuffer)) {
-                                    unprocessedUpdate = SpeedUpdate{nmeaBuffer, minmea_tofloat(&frame.speed_kph)};
+                                    updates.push_back(SpeedUpdate{std::string(nmeaBuffer), minmea_tofloat(&frame.speed_kph)});
                                 } else {
                                     spdlog::error("Failed to parse VTG sentence: {}", nmeaBuffer);
                                 }
@@ -108,7 +133,7 @@ void GPS::readAvailable() {
                             case MINMEA_SENTENCE_GSA: {
                                 struct minmea_sentence_gsa frame;
                                 if (minmea_parse_gsa(&frame, nmeaBuffer)) {
-                                    unprocessedUpdate = SatellitesUpdate{nmeaBuffer, 0, minmea_tofloat(&frame.hdop)};
+                                    updates.push_back(SatellitesUpdate{std::string(nmeaBuffer), 0, minmea_tofloat(&frame.hdop)});
                                 } else {
                                     spdlog::error("Failed to parse GSA sentence: {}", nmeaBuffer);
                                 }
@@ -117,11 +142,11 @@ void GPS::readAvailable() {
                             case MINMEA_SENTENCE_GLL: {
                                 struct minmea_sentence_gll frame;
                                 if (minmea_parse_gll(&frame, nmeaBuffer)) {
-                                    unprocessedUpdate = PositionUpdate{
-                                            nmeaBuffer,
+                                    updates.push_back(PositionUpdate{
+                                            std::string(nmeaBuffer),
                                             minmea_tocoord(&frame.latitude),
                                             minmea_tocoord(&frame.longitude)
-                                    };
+                                    });
                                 } else {
                                     spdlog::error("Failed to parse GLL sentence: {}", nmeaBuffer);
                                 }
@@ -130,11 +155,11 @@ void GPS::readAvailable() {
                             case MINMEA_SENTENCE_RMC: {
                                 struct minmea_sentence_rmc frame;
                                 if (minmea_parse_rmc(&frame, nmeaBuffer)) {
-                                    unprocessedUpdate = PositionUpdate{
-                                            nmeaBuffer,
+                                    updates.push_back(PositionUpdate{
+                                            std::string(nmeaBuffer),
                                             minmea_tocoord(&frame.latitude),
                                             minmea_tocoord(&frame.longitude)
-                                    };
+                                    });
                                 } else {
                                     spdlog::error("Failed to parse RMC sentence: {}", nmeaBuffer);
                                 }
@@ -143,11 +168,11 @@ void GPS::readAvailable() {
                             case MINMEA_SENTENCE_GGA: {
                                 struct minmea_sentence_gga frame;
                                 if (minmea_parse_gga(&frame, nmeaBuffer)) {
-                                    unprocessedUpdate = PositionUpdate{
-                                            nmeaBuffer,
+                                    updates.push_back(PositionUpdate{
+                                            std::string(nmeaBuffer),
                                             minmea_tocoord(&frame.latitude),
                                             minmea_tocoord(&frame.longitude)
-                                    };
+                                    });
                                 } else {
                                     spdlog::error("Failed to parse GGA sentence: {}", nmeaBuffer);
                                 }
@@ -157,14 +182,6 @@ void GPS::readAvailable() {
                                 spdlog::error("Unknown sentence: {}", nmeaBuffer);
                                 break;
                         }
-
-                        // label_update_t *update_info = (label_update_t *) malloc(sizeof(label_update_t));
-                        // update_info->label = label;
-
-                        // snprintf(update_info->text, TEXT_BUF_SIZE, "%s", buf); // Create the string with the counter
-                        // printf("%s\n", update_info->text);
-
-                        // lv_async_call(update_label_text, update_info);
                     }
                 }
 
@@ -175,14 +192,18 @@ void GPS::readAvailable() {
             nmeaBuffer[nmeaBufferCurrentIdx++] = c;
         }
     }
+
+    if (!updates.empty()) {
+        unprocessedUpdates = updates;
+    }
 }
 
-std::optional <GpsUpdate> GPS::getUnprocessedUpdate() {
-    if (unprocessedUpdate.has_value()) {
-        GpsUpdate update = unprocessedUpdate.value();
-        unprocessedUpdate = std::nullopt;
+std::optional <GpsUpdateList> GPS::getUnprocessedUpdates() {
+    if (unprocessedUpdates.has_value()) {
+        GpsUpdateList updates = unprocessedUpdates.value();
+        unprocessedUpdates = std::nullopt;
 
-        return update;
+        return updates;
     } else {
         return std::nullopt;
     }
