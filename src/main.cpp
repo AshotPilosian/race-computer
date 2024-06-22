@@ -64,6 +64,7 @@ int main() {
     setup();
 
     spdlog::info("Application started");
+    display.update();
     int updatedDataCounter = 0;
     while (updatedDataCounter < 10) {
         spdlog::trace("Main loop iteration started");
@@ -78,7 +79,7 @@ int main() {
             }
         }
 
-        usleep(1000);
+        std::this_thread::sleep_for(std::chrono::milliseconds(5));
     }
     spdlog::info("Application finished");
 
