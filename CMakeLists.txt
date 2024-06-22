@@ -80,7 +80,7 @@ set (LV_CONF_BUILD_DISABLE_EXAMPLES ON)
 set (LV_CONF_BUILD_DISABLE_THORVG_INTERNAL ON)
 set (LV_CONF_BUILD_DISABLE_DEMOS ON)
 set(LV_CONF_PATH
-        ${CMAKE_CURRENT_SOURCE_DIR}/lv_conf.h
+        ${CMAKE_CURRENT_SOURCE_DIR}/src/lvgl/lv_conf.h
         CACHE STRING "" FORCE)
 FetchContent_Declare(
         lvgl
