@@ -1,8 +1,33 @@
 cmake_minimum_required(VERSION 3.22)
 include(FetchContent)
 
+#### Milkv duo-sdk with RISK-V toolchain
+set(DEPENDENCIES_DIR ${CMAKE_CURRENT_SOURCE_DIR}/dependencies)
+
+if (EXISTS ${DEPENDENCIES_DIR})
+    message("Dependencies directory exists, disabling external libraries download. Dir: ${DEPENDENCIES_DIR}")
+    set(FETCHCONTENT_FULLY_DISCONNECTED ON)
+else ()
+    message("Dependencies directory does not exist, downloading external libraries. Dir: ${DEPENDENCIES_DIR}")
+endif ()
+
+## milkv duo-sdk
+FetchContent_Declare(
+        duo-sdk
+        GIT_REPOSITORY https://github.com/milkv-duo/duo-sdk.git
+        GIT_TAG cbbb915921ab923ac3a3b4345a0ac57ec550db36
+        SOURCE_DIR ${CMAKE_CURRENT_SOURCE_DIR}/dependencies/duo-sdk/src
+        BINARY_DIR ${CMAKE_CURRENT_SOURCE_DIR}/dependencies/duo-sdk/build
+        CONFIGURE_COMMAND ""
+        BUILD_COMMAND ""
+)
+FetchContent_GetProperties(duo-sdk)
+if(NOT duo-sdk_POPULATED)
+    FetchContent_Populate(duo-sdk)
+endif()
+
 #### Compiler configuration. Should be done before project declaration.
-set(MILKV_DUO_SDK ${CMAKE_CURRENT_SOURCE_DIR}/duo-sdk)
+set(MILKV_DUO_SDK ${duo-sdk_SOURCE_DIR})
 set(SYSROOT ${MILKV_DUO_SDK}/rootfs)
 
 # CLion on Mac can not configure project properly with risk-v compiler, so have to omit this by setting CLION=1 env var
@@ -21,36 +46,13 @@ else ()
     set(CMAKE_CXX_COMPILER ${TOOLCHAIN_PREFIX}g++)
 endif ()
 
-#### Project declaration
-project(RaceComputer VERSION 0.1 LANGUAGES C CXX)
-
-# Set the C++ standard
-set(CMAKE_CXX_STANDARD 20)
-set(CMAKE_CXX_STANDARD_REQUIRED True)
-
-add_compile_options(
-        -D_POSIX_C_SOURCE=199309L
-        -DLOG_USE_COLOR
-        -Dtimegm=mktime
-        -g
-        ${WARNINGS}
-)
-
-set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS}")
-
 #### Dependencies
-set(DEPENDENCIES_DIR ${CMAKE_CURRENT_SOURCE_DIR}/dependencies)
-if (EXISTS ${DEPENDENCIES_DIR})
-    message("Dependencies directory exists, disabling external libraries download. Dir: ${DEPENDENCIES_DIR}")
-    set(FETCHCONTENT_FULLY_DISCONNECTED ON)
-else ()
-    message("Dependencies directory does not exist, downloading external libraries. Dir: ${DEPENDENCIES_DIR}")
-endif ()
 
 ## minmea
 FetchContent_Declare(
         minmea
         GIT_REPOSITORY https://github.com/kosma/minmea.git
+        GIT_TAG e368d847d75abd891c651f7d30ce5efb6681adb7
         SOURCE_DIR ${CMAKE_CURRENT_SOURCE_DIR}/dependencies/minmea/src
         BINARY_DIR ${CMAKE_CURRENT_SOURCE_DIR}/dependencies/minmea/build
         CONFIGURE_COMMAND ""
@@ -83,10 +85,28 @@ set(LV_CONF_PATH
 FetchContent_Declare(
         lvgl
         GIT_REPOSITORY https://github.com/lvgl/lvgl.git
+        GIT_TAG e4258be5a59f793c2f55f90297f1db09eb47409c
         SOURCE_DIR ${CMAKE_CURRENT_SOURCE_DIR}/dependencies/lvgl/src
         BINARY_DIR ${CMAKE_CURRENT_SOURCE_DIR}/dependencies/lvgl/build
 )
 FetchContent_MakeAvailable(lvgl)
+
+#### Project declaration
+project(RaceComputer VERSION 0.1 LANGUAGES C CXX)
+
+# Set the C++ standard
+set(CMAKE_CXX_STANDARD 20)
+set(CMAKE_CXX_STANDARD_REQUIRED True)
+
+add_compile_options(
+        -D_POSIX_C_SOURCE=199309L
+        -DLOG_USE_COLOR
+        -Dtimegm=mktime
+        -g
+        ${WARNINGS}
+)
+
+set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS}")
 
 #### Sources ####
 file(GLOB_RECURSE ASRCS "src/*.S")

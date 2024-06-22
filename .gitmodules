@@ -1,3 +1,0 @@
-[submodule "duo-sdk"]
-	path = duo-sdk
-	url = https://github.com/milkv-duo/duo-sdk.git
