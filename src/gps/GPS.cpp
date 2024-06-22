@@ -5,9 +5,10 @@
 #include <cstdint>
 #include <cstring>
 #include <span>
+#include <unistd.h>
 
 #include "spdlog/spdlog.h"
-#include "../minmea/minmea.h"
+#include "minmea.h"
 
 #include "GPS.h"
 #include "UbxCommands.h"
