@@ -6,23 +6,44 @@ struct GpsUpdateBase {
 };
 
 struct PositionUpdate : GpsUpdateBase {
-    float latitude;
-    float longitude;
+    float latitude{};
+    float longitude{};
 };
 
 struct TimeUpdate : GpsUpdateBase {
-    int hour;
-    int minute;
-    int second;
+    int hour{};
+    int minute{};
+    int second{};
 };
 
 struct SpeedUpdate : GpsUpdateBase {
-    float speed;
+    float speed{};
 };
 
 struct SatellitesUpdate : GpsUpdateBase {
-    int numberOfSatellites;
-    float hdop;
+    int numberOfSatellites{};
+    float hdop{};
+};
+
+struct GpsState {
+    bool hasFix{};
+    int fixQuality{};
+    int numberOfSatellites{};
+    float hdop{};
+
+    int day{};
+    int month{};
+    int year{};
+
+    int hours{};
+    int minutes{};
+    int seconds{};
+    int microseconds{};
+
+    float latitude{};
+    float longitude{};
+
+    float speed{};
 };
 
 using GpsUpdate = std::variant<PositionUpdate, TimeUpdate, SpeedUpdate, SatellitesUpdate>;

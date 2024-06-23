@@ -13,13 +13,13 @@
 #include "GPS.h"
 #include "UbxCommands.h"
 
-GPS::GPS() {
-    nmeaBufferCurrentIdx = 0;
-    nmeaBufferStartValid = false;
+GPS::GPS(): nmeaBufferCurrentIdx(0),
+            nmeaBufferStartValid(false),
+            currentState({}) {
 }
 
-void GPS::writeCommandToModule(std::span<const unsigned char> command) {
-    for (unsigned char ch : command) {
+void GPS::writeCommandToModule(const std::span<const unsigned char> command) const {
+    for (unsigned char ch: command) {
         spdlog::trace("Writing command char: {}", ch);
         wiringXSerialPutChar(uartFd, ch);
     }
@@ -80,7 +80,7 @@ uint8_t GPS::calculateChecksum(const char *sentence) {
     return checksum;
 }
 
-std::optional <uint8_t> GPS::extractChecksum(const char *sentence) {
+std::optional<uint8_t> GPS::extractChecksum(const char *sentence) {
     // Find the '*' character in the sentence
     const char *checksumStr = strchr(sentence, '*');
     if (checksumStr == NULL || strlen(checksumStr) < 3) {
@@ -93,7 +93,7 @@ std::optional <uint8_t> GPS::extractChecksum(const char *sentence) {
 }
 
 bool GPS::validateChecksum(const char *sentence) {
-    std::optional <uint8_t> extractedChecksum = extractChecksum(sentence);
+    std::optional<uint8_t> extractedChecksum = extractChecksum(sentence);
     if (!extractedChecksum.has_value()) {
         return false;
     }
@@ -125,60 +125,96 @@ void GPS::readAvailable() {
                             case MINMEA_SENTENCE_VTG: {
                                 struct minmea_sentence_vtg frame;
                                 if (minmea_parse_vtg(&frame, nmeaBuffer)) {
-                                    updates.push_back(SpeedUpdate{std::string(nmeaBuffer), minmea_tofloat(&frame.speed_kph)});
+                                    currentState.speed = minmea_tofloat(&frame.speed_kph);
+
+                                    updates.push_back(SpeedUpdate{
+                                        std::string(nmeaBuffer), minmea_tofloat(&frame.speed_kph)
+                                    });
                                 } else {
                                     spdlog::error("Failed to parse VTG sentence: {}", nmeaBuffer);
                                 }
                             }
-                                break;
+                            break;
                             case MINMEA_SENTENCE_GSA: {
                                 struct minmea_sentence_gsa frame;
                                 if (minmea_parse_gsa(&frame, nmeaBuffer)) {
-                                    updates.push_back(SatellitesUpdate{std::string(nmeaBuffer), 0, minmea_tofloat(&frame.hdop)});
+                                    updates.push_back(SatellitesUpdate{
+                                        std::string(nmeaBuffer), 0, minmea_tofloat(&frame.hdop)
+                                    });
                                 } else {
                                     spdlog::error("Failed to parse GSA sentence: {}", nmeaBuffer);
                                 }
                             }
-                                break;
+                            break;
                             case MINMEA_SENTENCE_GLL: {
                                 struct minmea_sentence_gll frame;
                                 if (minmea_parse_gll(&frame, nmeaBuffer)) {
                                     updates.push_back(PositionUpdate{
-                                            std::string(nmeaBuffer),
-                                            minmea_tocoord(&frame.latitude),
-                                            minmea_tocoord(&frame.longitude)
+                                        std::string(nmeaBuffer),
+                                        minmea_tocoord(&frame.latitude),
+                                        minmea_tocoord(&frame.longitude)
                                     });
                                 } else {
                                     spdlog::error("Failed to parse GLL sentence: {}", nmeaBuffer);
                                 }
                             }
-                                break;
+                            break;
                             case MINMEA_SENTENCE_RMC: {
                                 struct minmea_sentence_rmc frame;
                                 if (minmea_parse_rmc(&frame, nmeaBuffer)) {
+                                    currentState.hasFix = frame.valid;
+
+                                    currentState.latitude = minmea_tocoord(&frame.latitude);
+                                    currentState.longitude = minmea_tocoord(&frame.longitude);
+
+                                    currentState.day = frame.date.day;
+                                    currentState.month = frame.date.month;
+                                    currentState.year = frame.date.year;
+
+                                    currentState.hours = frame.time.hours;
+                                    currentState.minutes = frame.time.minutes;
+                                    currentState.seconds = frame.time.seconds;
+                                    currentState.seconds = frame.time.microseconds;
+
+                                    // This speed is in knots, should be converted at first
+                                    // currentState.speed = minmea_tofloat(&frame.speed);
+
                                     updates.push_back(PositionUpdate{
-                                            std::string(nmeaBuffer),
-                                            minmea_tocoord(&frame.latitude),
-                                            minmea_tocoord(&frame.longitude)
+                                        std::string(nmeaBuffer),
+                                        minmea_tocoord(&frame.latitude),
+                                        minmea_tocoord(&frame.longitude)
                                     });
                                 } else {
                                     spdlog::error("Failed to parse RMC sentence: {}", nmeaBuffer);
                                 }
                             }
-                                break;
+                            break;
                             case MINMEA_SENTENCE_GGA: {
                                 struct minmea_sentence_gga frame;
                                 if (minmea_parse_gga(&frame, nmeaBuffer)) {
+                                    currentState.hasFix = frame.fix_quality > 0;
+                                    currentState.fixQuality = frame.fix_quality;
+                                    currentState.numberOfSatellites = frame.satellites_tracked;
+                                    currentState.hdop = minmea_tofloat(&frame.hdop);
+
+                                    currentState.latitude = minmea_tocoord(&frame.latitude);
+                                    currentState.longitude = minmea_tocoord(&frame.longitude);
+
+                                    currentState.hours = frame.time.hours;
+                                    currentState.minutes = frame.time.minutes;
+                                    currentState.seconds = frame.time.seconds;
+                                    currentState.seconds = frame.time.microseconds;
+
                                     updates.push_back(PositionUpdate{
-                                            std::string(nmeaBuffer),
-                                            minmea_tocoord(&frame.latitude),
-                                            minmea_tocoord(&frame.longitude)
+                                        std::string(nmeaBuffer),
+                                        minmea_tocoord(&frame.latitude),
+                                        minmea_tocoord(&frame.longitude)
                                     });
                                 } else {
                                     spdlog::error("Failed to parse GGA sentence: {}", nmeaBuffer);
                                 }
                             }
-                                break;
+                            break;
                             default:
                                 spdlog::error("Unknown sentence: {}", nmeaBuffer);
                                 break;
@@ -199,7 +235,7 @@ void GPS::readAvailable() {
     }
 }
 
-std::optional <GpsUpdateList> GPS::getUnprocessedUpdates() {
+std::optional<GpsUpdateList> GPS::getUnprocessedUpdates() {
     if (unprocessedUpdates.has_value()) {
         GpsUpdateList updates = unprocessedUpdates.value();
         unprocessedUpdates = std::nullopt;

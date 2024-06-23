@@ -26,10 +26,12 @@ private:
 
     int openUartToGpsModule(unsigned int baudRate);
 
-    void writeCommandToModule(std::span<const unsigned char> commandBytes);
+    void writeCommandToModule(std::span<const unsigned char> commandBytes) const;
 
 public:
     GPS();
+
+    GpsState currentState;
 
     void setup();
 
