@@ -1,12 +1,14 @@
+#include <iomanip>
 #include <iostream>
+#include <sstream>
 #include <wiringx.h>
 #include <unistd.h>
-#include <string.h>
 #include <variant>
 
 #include "spdlog/spdlog.h"
 #include "gps/GPS.h"
 #include "display/Display.h"
+#include "display/layout/SectorTimesLayout.h"
 
 int init_wiringX() {
     spdlog::info("Setting up wiringX");
@@ -23,13 +25,18 @@ int init_wiringX() {
     return 0;
 }
 
-Display display;
 GPS gps;
+Display display;
+SectorTimesLayout sectorTimesLayout(&display);
+
+int displayUpdateIntervalMs = 250;
+long long displayUpdatedAtMs = 0;
 
 void setup() {
     spdlog::info("Setup started");
 
     display.setup();
+    sectorTimesLayout.setup();
     init_wiringX();
     gps.setup();
 
@@ -47,14 +54,46 @@ void shutdown() {
 
 void handleUpdate(const GpsUpdate &update) {
     std::visit([](const auto &arg) {
-        if constexpr(std::is_same_v < std::decay_t < decltype(arg) > , PositionUpdate > )
-        {
-            spdlog::info("Position Update. Lat: {}; :Lon: {}; NMEA: {}", arg.nmeaSentence, arg.latitude, arg.longitude);
-        } else if constexpr(std::is_same_v < std::decay_t < decltype(arg) > , SpeedUpdate > )
-        {
+        if constexpr (std::is_same_v<std::decay_t<decltype(arg)>, PositionUpdate>) {
+            spdlog::info("Position Update. NMEA: {}; Lat: {}; Lon: {}", arg.nmeaSentence, arg.latitude, arg.longitude);
+        } else if constexpr (std::is_same_v<std::decay_t<decltype(arg)>, SpeedUpdate>) {
             spdlog::info("Speed Update. Speed: {}", arg.speed);
         }
     }, update);
+}
+
+long long getCurrentTimeMs() {
+    // Get the current time point from the system clock
+    const auto now = std::chrono::system_clock::now();
+
+    // Convert the time point to a duration since epoch
+    const auto duration = duration_cast<std::chrono::milliseconds>(now.time_since_epoch());
+
+    // Get the number of milliseconds
+    return duration.count();
+}
+
+void updateDisplayIfNeeded() {
+    long long currentTimeMs = getCurrentTimeMs();
+
+    if (currentTimeMs - displayUpdatedAtMs > displayUpdateIntervalMs) {
+        spdlog::debug("Updating info on display");
+
+        int randomNum = rand() % 50;
+        spdlog::debug(randomNum);
+
+        std::ostringstream oss;
+        oss << std::fixed << std::setprecision(2) << "+" << randomNum / 100.0;
+
+        const SectorTimeLayoutUpdateData updateData = {
+            SectorTimeUpdateData{FASTER_THEN_PREVIOUS_LAP, "-0.40"},
+            SectorTimeUpdateData{SLOWER_THEN_PREVIOUS_LAP, oss.str()},
+            SectorTimeUpdateData{BEST, "-0.07"}
+        };
+        sectorTimesLayout.update(updateData);
+
+        displayUpdatedAtMs = getCurrentTimeMs();
+    }
 }
 
 int main() {
@@ -64,20 +103,21 @@ int main() {
     setup();
 
     spdlog::info("Application started");
-    display.update();
+
     int updatedDataCounter = 0;
-    while (updatedDataCounter < 10) {
+    while (updatedDataCounter < 100) {
         spdlog::trace("Main loop iteration started");
 
         gps.readAvailable();
-        auto unprocessedUpdates = gps.getUnprocessedUpdates();
-        if (unprocessedUpdates) {
+        if (auto unprocessedUpdates = gps.getUnprocessedUpdates()) {
             for (const auto &update: unprocessedUpdates.value()) {
                 handleUpdate(update);
 
                 updatedDataCounter++;
             }
         }
+
+        updateDisplayIfNeeded();
 
         std::this_thread::sleep_for(std::chrono::milliseconds(5));
     }
