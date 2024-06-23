@@ -74,16 +74,12 @@ long long getCurrentTimeMs() {
 }
 
 void updateDisplayIfNeeded() {
-    long long currentTimeMs = getCurrentTimeMs();
-
-    if (currentTimeMs - displayUpdatedAtMs > displayUpdateIntervalMs) {
+    if (long long currentTimeMs = getCurrentTimeMs();
+        currentTimeMs - displayUpdatedAtMs > displayUpdateIntervalMs) {
         spdlog::debug("Updating info on display");
 
-        int randomNum = rand() % 50;
-        spdlog::debug(randomNum);
-
         std::ostringstream oss;
-        oss << std::fixed << std::setprecision(2) << "+" << randomNum / 100.0;
+        oss << std::fixed << std::setprecision(2) << "+" << (rand() % 50) / 100.0;
 
         const SectorTimeLayoutUpdateData updateData = {
             SectorTimeUpdateData{FASTER_THEN_PREVIOUS_LAP, "-0.40"},
@@ -92,7 +88,7 @@ void updateDisplayIfNeeded() {
         };
         sectorTimesLayout.update(updateData);
 
-        displayUpdatedAtMs = getCurrentTimeMs();
+        displayUpdatedAtMs = currentTimeMs;
     }
 }
 

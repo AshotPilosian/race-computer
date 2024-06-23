@@ -1,6 +1,8 @@
 #ifndef RACE_COMPUTER_GPSMODELS_H
 #define RACE_COMPUTER_GPSMODELS_H
 
+#include <variant>
+
 struct GpsUpdateBase {
     std::string nmeaSentence;
 };

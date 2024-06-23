@@ -2,10 +2,7 @@
 #define RACE_COMPUTER_GPS_H
 
 #include <optional>
-#include <cstdio>
 #include <cstdint>
-#include <string>
-#include <variant>
 #include <span>
 #include "GpsModels.h"
 
