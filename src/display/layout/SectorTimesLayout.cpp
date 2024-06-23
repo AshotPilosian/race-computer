@@ -52,13 +52,15 @@ void SectorTimesLayout::setup() {
 }
 
 void SectorTimesLayout::initStyles() {
+    LV_FONT_DECLARE(martian_mono_20);
+
     lv_style_init(&mainContainerStyle);
     lv_style_set_border_width(&mainContainerStyle, 0);
     lv_style_set_radius(&mainContainerStyle, 0);
     lv_style_set_pad_all(&mainContainerStyle, 0);
 
     lv_style_init(&sectorTimeTextStyle);
-    lv_style_set_text_font(&sectorTimeTextStyle, &lv_font_montserrat_20);
+    lv_style_set_text_font(&sectorTimeTextStyle, &martian_mono_20);
 
     lv_style_init(&sectorTimeContainerStyle);
     lv_style_set_radius(&sectorTimeContainerStyle, 0);
