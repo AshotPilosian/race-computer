@@ -15,7 +15,7 @@ int init_wiringX() {
 
     system("duo-pinmux -w GP2/UART1_TX && duo-pinmux -w GP3/UART1_RX");
 
-    if (wiringXSetup("milkv_duo256m", NULL) == -1) {
+    if (wiringXSetup(std::string("milkv_duo256m").data(), nullptr) == -1) {
         wiringXGC();
         return 1;
     }
@@ -84,7 +84,9 @@ void updateDisplayIfNeeded() {
         const SectorTimeLayoutUpdateData updateData = {
             SectorTimeUpdateData{FASTER_THEN_PREVIOUS_LAP, "-0.40"},
             SectorTimeUpdateData{SLOWER_THEN_PREVIOUS_LAP, oss.str()},
-            SectorTimeUpdateData{BEST, "-0.07"}
+            SectorTimeUpdateData{BEST, "-0.07"},
+
+            gps.currentState
         };
         sectorTimesLayout.update(updateData);
 
