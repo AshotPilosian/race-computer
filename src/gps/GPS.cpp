@@ -174,7 +174,7 @@ void GPS::readAvailable() {
                                     currentState.hours = frame.time.hours;
                                     currentState.minutes = frame.time.minutes;
                                     currentState.seconds = frame.time.seconds;
-                                    currentState.seconds = frame.time.microseconds;
+                                    currentState.microseconds = frame.time.microseconds;
 
                                     // This speed is in knots, should be converted at first
                                     // currentState.speed = minmea_tofloat(&frame.speed);
@@ -203,7 +203,7 @@ void GPS::readAvailable() {
                                     currentState.hours = frame.time.hours;
                                     currentState.minutes = frame.time.minutes;
                                     currentState.seconds = frame.time.seconds;
-                                    currentState.seconds = frame.time.microseconds;
+                                    currentState.microseconds = frame.time.microseconds;
 
                                     updates.push_back(PositionUpdate{
                                         std::string(nmeaBuffer),
