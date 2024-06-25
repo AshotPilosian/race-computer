@@ -21,6 +21,7 @@ class SectorTimesLayout {
     lv_style_t sectorTimeTextStyle;
     lv_style_t sectorTimeContainerStyle;
     lv_style_t mainContainerStyle;
+    lv_style_t gpsInfoContainerStyle;
     lv_style_t gpsInfoTextStyle;
 
     static lv_color_t toColor(SectorState sectorState);

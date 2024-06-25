@@ -227,15 +227,15 @@ void GPS::readAvailable() {
                                         strncpy(gnssType, nmeaBuffer + 1, 2);
                                         gnssType[2] = '\0';
 
-                                        if constexpr (gnssType == "GP") {
+                                        if (auto gnssTypeStr = std::string(gnssType); gnssTypeStr == "GP") {
                                             currentState.gpsSats = frame.total_sats;
-                                        } else if constexpr (gnssType == "GL") {
+                                        } else if (gnssTypeStr == "GL") {
                                             currentState.glonassSats = frame.total_sats;
-                                        } else if constexpr (gnssType == "GA") {
+                                        } else if (gnssTypeStr == "GA") {
                                             currentState.galileoSats = frame.total_sats;
-                                        } else if constexpr (gnssType == "GB") {
+                                        } else if (gnssTypeStr == "GB") {
                                             currentState.beidouSats = frame.total_sats;
-                                        } else if constexpr (gnssType == "GQ") {
+                                        } else if (gnssTypeStr == "GQ") {
                                             currentState.qzssSats = frame.total_sats;
                                         } else {
                                             spdlog::error("Unknown GNSS type: {}", gnssType);

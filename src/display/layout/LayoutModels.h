@@ -19,6 +19,7 @@ struct GpsInfoWidget {
     lv_obj_t *speedLabel;
     lv_obj_t *fixInfoLabel;
     lv_obj_t *timeLabel;
+    lv_obj_t *satStatsLabel;
 };
 
 struct SectorTimeWidget {
