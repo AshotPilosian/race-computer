@@ -34,6 +34,12 @@ struct GpsState {
     int numberOfSatellites{};
     float hdop{};
 
+    int gpsSats;
+    int glonassSats;
+    int galileoSats;
+    int beidouSats;
+    int qzssSats;
+
     int day{};
     int month{};
     int year{};

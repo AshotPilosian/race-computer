@@ -117,13 +117,12 @@ void GPS::readAvailable() {
                 spdlog::trace("Nmea start detected");
                 nmeaBuffer[nmeaBufferCurrentIdx] = '\0';
                 if (nmeaBufferStartValid) {
-                    bool validChecksum = validateChecksum(nmeaBuffer);
-                    if (validChecksum) {
+                    if (validateChecksum(nmeaBuffer)) {
                         spdlog::trace("NMEA: {}", nmeaBuffer);
 
                         switch (minmea_sentence_id(nmeaBuffer, false)) {
                             case MINMEA_SENTENCE_VTG: {
-                                struct minmea_sentence_vtg frame;
+                                minmea_sentence_vtg frame;
                                 if (minmea_parse_vtg(&frame, nmeaBuffer)) {
                                     currentState.speed = minmea_tofloat(&frame.speed_kph);
 
@@ -135,8 +134,9 @@ void GPS::readAvailable() {
                                 }
                             }
                             break;
+
                             case MINMEA_SENTENCE_GSA: {
-                                struct minmea_sentence_gsa frame;
+                                minmea_sentence_gsa frame;
                                 if (minmea_parse_gsa(&frame, nmeaBuffer)) {
                                     updates.push_back(SatellitesUpdate{
                                         std::string(nmeaBuffer), 0, minmea_tofloat(&frame.hdop)
@@ -146,8 +146,9 @@ void GPS::readAvailable() {
                                 }
                             }
                             break;
+
                             case MINMEA_SENTENCE_GLL: {
-                                struct minmea_sentence_gll frame;
+                                minmea_sentence_gll frame;
                                 if (minmea_parse_gll(&frame, nmeaBuffer)) {
                                     updates.push_back(PositionUpdate{
                                         std::string(nmeaBuffer),
@@ -159,8 +160,9 @@ void GPS::readAvailable() {
                                 }
                             }
                             break;
+
                             case MINMEA_SENTENCE_RMC: {
-                                struct minmea_sentence_rmc frame;
+                                minmea_sentence_rmc frame;
                                 if (minmea_parse_rmc(&frame, nmeaBuffer)) {
                                     currentState.hasFix = frame.valid;
 
@@ -189,8 +191,9 @@ void GPS::readAvailable() {
                                 }
                             }
                             break;
+
                             case MINMEA_SENTENCE_GGA: {
-                                struct minmea_sentence_gga frame;
+                                minmea_sentence_gga frame;
                                 if (minmea_parse_gga(&frame, nmeaBuffer)) {
                                     currentState.hasFix = frame.fix_quality > 0;
                                     currentState.fixQuality = frame.fix_quality;
@@ -215,6 +218,35 @@ void GPS::readAvailable() {
                                 }
                             }
                             break;
+
+                            case MINMEA_SENTENCE_GSV: {
+                                minmea_sentence_gsv frame;
+                                if (minmea_parse_gsv(&frame, nmeaBuffer)) {
+                                    if (frame.msg_nr == 1) {
+                                        char gnssType[3];
+                                        strncpy(gnssType, nmeaBuffer + 1, 2);
+                                        gnssType[2] = '\0';
+
+                                        if constexpr (gnssType == "GP") {
+                                            currentState.gpsSats = frame.total_sats;
+                                        } else if constexpr (gnssType == "GL") {
+                                            currentState.glonassSats = frame.total_sats;
+                                        } else if constexpr (gnssType == "GA") {
+                                            currentState.galileoSats = frame.total_sats;
+                                        } else if constexpr (gnssType == "GB") {
+                                            currentState.beidouSats = frame.total_sats;
+                                        } else if constexpr (gnssType == "GQ") {
+                                            currentState.qzssSats = frame.total_sats;
+                                        } else {
+                                            spdlog::error("Unknown GNSS type: {}", gnssType);
+                                        }
+                                    }
+                                } else {
+                                    spdlog::error("Failed to parse GSV sentence: {}", nmeaBuffer);
+                                }
+                            }
+                            break;
+
                             default:
                                 spdlog::error("Unknown sentence: {}", nmeaBuffer);
                                 break;
