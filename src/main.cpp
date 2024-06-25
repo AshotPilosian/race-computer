@@ -1,14 +1,24 @@
+#include <csignal>
 #include <iomanip>
 #include <iostream>
 #include <sstream>
 #include <wiringx.h>
 #include <unistd.h>
 #include <variant>
+#include <atomic>
 
 #include "spdlog/spdlog.h"
 #include "gps/GPS.h"
 #include "display/Display.h"
 #include "display/layout/SectorTimesLayout.h"
+
+GPS gps;
+Display display;
+SectorTimesLayout sectorTimesLayout(&display);
+
+int displayUpdateIntervalMs = 250;
+long long displayUpdatedAtMs = 0;
+std::atomic running = true;
 
 int init_wiringX() {
     spdlog::info("Setting up wiringX");
@@ -25,24 +35,6 @@ int init_wiringX() {
     return 0;
 }
 
-GPS gps;
-Display display;
-SectorTimesLayout sectorTimesLayout(&display);
-
-int displayUpdateIntervalMs = 250;
-long long displayUpdatedAtMs = 0;
-
-void setup() {
-    spdlog::info("Setup started");
-
-    display.setup();
-    sectorTimesLayout.setup();
-    init_wiringX();
-    gps.setup();
-
-    spdlog::info("Setup finished");
-}
-
 void shutdown() {
     spdlog::info("Shutdown started");
 
@@ -50,6 +42,33 @@ void shutdown() {
     gps.shutdown();
 
     spdlog::info("Shutdown finished");
+}
+
+void signalHandler(int signal) {
+    spdlog::info("Signal {} received. Shutting down...", signal);
+
+    running = false;
+    shutdown();
+
+    spdlog::info("Shutdown completed. Exiting program.");
+    exit(signal);
+}
+
+void setup() {
+    spdlog::set_level(spdlog::level::info);
+    spdlog::set_pattern("[%H:%M:%S.%e] [%^%L%$] %v");
+
+    spdlog::info("Setup started");
+
+    std::signal(SIGINT, signalHandler);
+    std::signal(SIGTERM, signalHandler);
+
+    display.setup();
+    sectorTimesLayout.setup();
+    init_wiringX();
+    gps.setup();
+
+    spdlog::info("Setup finished");
 }
 
 void handleUpdate(const GpsUpdate &update) {
@@ -95,23 +114,17 @@ void updateDisplayIfNeeded() {
 }
 
 int main() {
-    spdlog::set_level(spdlog::level::debug);
-    spdlog::set_pattern("[%H:%M:%S.%e] [%^%L%$] %v");
-
     setup();
 
     spdlog::info("Application started");
 
-    int updatedDataCounter = 0;
-    while (updatedDataCounter < 100) {
+    while (running) {
         spdlog::trace("Main loop iteration started");
 
         gps.readAvailable();
         if (auto unprocessedUpdates = gps.getUnprocessedUpdates()) {
             for (const auto &update: unprocessedUpdates.value()) {
                 handleUpdate(update);
-
-                updatedDataCounter++;
             }
         }
 
@@ -120,8 +133,6 @@ int main() {
         std::this_thread::sleep_for(std::chrono::milliseconds(5));
     }
     spdlog::info("Application finished");
-
-    shutdown();
 
     return 0;
 }
