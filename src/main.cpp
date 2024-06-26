@@ -10,11 +10,13 @@
 #include "spdlog/spdlog.h"
 #include "gps/GPS.h"
 #include "display/Display.h"
+#include "display/datalogger/DataLogger.h"
 #include "display/layout/SectorTimesLayout.h"
 
 GPS gps;
 Display display;
 SectorTimesLayout sectorTimesLayout(&display);
+DataLogger dataLogger("./nmea_logs", "nmea_", ".log");
 
 int displayUpdateIntervalMs = 250;
 long long displayUpdatedAtMs = 0;
@@ -69,6 +71,7 @@ void setup() {
     sectorTimesLayout.setup();
     init_wiringX();
     gps.setup();
+    dataLogger.setup();
 
     spdlog::info("Setup finished");
 }
@@ -77,8 +80,10 @@ void handleUpdate(const GpsUpdate &update) {
     std::visit([](const auto &arg) {
         if constexpr (std::is_same_v<std::decay_t<decltype(arg)>, PositionUpdate>) {
             spdlog::info("Position Update. NMEA: {}; Lat: {}; Lon: {}", arg.nmeaSentence, arg.latitude, arg.longitude);
+
+            dataLogger.writeToFile(arg.nmeaSentence);
         } else if constexpr (std::is_same_v<std::decay_t<decltype(arg)>, SpeedUpdate>) {
-            spdlog::info("Speed Update. Speed: {}", arg.speed);
+            // spdlog::info("Speed Update. Speed: {}", arg.speed);
         }
     }, update);
 }
