@@ -7,9 +7,8 @@
 #include "GpsModels.h"
 
 class GPS {
-private:
     int uartFd;
-    char nmeaBuffer[100];
+    char nmeaBuffer[1000];
     int nmeaBufferCurrentIdx;
     bool nmeaBufferStartValid;
 

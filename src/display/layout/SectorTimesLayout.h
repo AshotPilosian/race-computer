@@ -37,7 +37,7 @@ public:
 
     SectorTimeWidget createSectorTimeWidget(lv_obj_t *parent, int32_t width, int32_t offsetX) const;
 
-    GpsInfoWidget createGpsInfoWidget(lv_obj_t *parent, const int32_t offsetY) const;
+    GpsInfoWidget createGpsInfoWidget(lv_obj_t *parent, int32_t offsetY) const;
 
     static void updateSectorTimes(void *param);
 

@@ -53,6 +53,8 @@ void SectorTimesLayout::setup() {
 
     gpsInfoWidget = createGpsInfoWidget(mainContainer, lv_pct(20));
 
+    std::this_thread::sleep_for(std::chrono::seconds(1));
+
     spdlog::info("SectorTimesLayout setup completed");
 }
 

@@ -35,6 +35,7 @@ void Display::setup() {
     spdlog::info("Setting up LVGL");
 
     initLvgl();
+    std::this_thread::sleep_for(std::chrono::seconds(1));
 
     /* Create a screen with a yellow background */
     lv_obj_t *scr = lv_screen_active();
@@ -51,7 +52,7 @@ void Display::setup() {
     lv_label_set_text(label, "Hallo, \nich heisse Kartoffel");
     lv_obj_align(label, LV_ALIGN_CENTER, 0, 0);
 
-    sleep(1);
+    std::this_thread::sleep_for(std::chrono::seconds(1));
 
     initialized = true;
 

@@ -20,6 +20,8 @@ int displayUpdateIntervalMs = 250;
 long long displayUpdatedAtMs = 0;
 std::atomic running = true;
 
+double sector2FakeTimeCounter = 0.0;
+
 int init_wiringX() {
     spdlog::info("Setting up wiringX");
 
@@ -55,7 +57,7 @@ void signalHandler(int signal) {
 }
 
 void setup() {
-    spdlog::set_level(spdlog::level::info);
+    spdlog::set_level(spdlog::level::debug);
     spdlog::set_pattern("[%H:%M:%S.%e] [%^%L%$] %v");
 
     spdlog::info("Setup started");
@@ -95,10 +97,14 @@ long long getCurrentTimeMs() {
 void updateDisplayIfNeeded() {
     if (long long currentTimeMs = getCurrentTimeMs();
         currentTimeMs - displayUpdatedAtMs > displayUpdateIntervalMs) {
-        spdlog::debug("Updating info on display");
+        spdlog::trace("Updating info on display");
+
+        sector2FakeTimeCounter = sector2FakeTimeCounter < 0.68
+                      ? sector2FakeTimeCounter + 0.01
+                      : 0.0;
 
         std::ostringstream oss;
-        oss << std::fixed << std::setprecision(2) << "+" << (rand() % 50) / 100.0;
+        oss << std::fixed << std::setprecision(2) << "+" << sector2FakeTimeCounter;
 
         const SectorTimeLayoutUpdateData updateData = {
             SectorTimeUpdateData{FASTER_THEN_PREVIOUS_LAP, "-0.40"},
