@@ -8,9 +8,10 @@
 #include <atomic>
 
 #include "spdlog/spdlog.h"
+
 #include "gps/GPS.h"
+#include "datalogger/DataLogger.h"
 #include "display/Display.h"
-#include "display/datalogger/DataLogger.h"
 #include "display/layout/SectorTimesLayout.h"
 
 GPS gps;
@@ -105,8 +106,8 @@ void updateDisplayIfNeeded() {
         spdlog::trace("Updating info on display");
 
         sector2FakeTimeCounter = sector2FakeTimeCounter < 0.68
-                      ? sector2FakeTimeCounter + 0.01
-                      : 0.0;
+                                     ? sector2FakeTimeCounter + 0.01
+                                     : 0.0;
 
         std::ostringstream oss;
         oss << std::fixed << std::setprecision(2) << "+" << sector2FakeTimeCounter;
