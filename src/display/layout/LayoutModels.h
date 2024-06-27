@@ -12,6 +12,22 @@ const lv_color_t colorSlowerThanPrevious = lv_color_hex(0xffff00);
 const lv_color_t colorGrey = lv_color_hex(0xeeeeee);
 const lv_color_t colorLightGrey = lv_color_hex(0xf5f5f5);
 
+struct LapTimerInfoUpdateData {
+    int lapCounter;
+    double distance;
+};
+
+struct LapTimerInfoWidget {
+    lv_obj_t *container;
+    lv_obj_t *distanceLabel;
+    lv_obj_t *lapCounterLabel;
+};
+
+struct LapTimerInfoWidgetData {
+    LapTimerInfoWidget widget;
+    LapTimerInfoUpdateData data;
+};
+
 struct GpsInfoWidget {
     lv_obj_t *container;
     lv_obj_t *latLabel;
@@ -52,6 +68,8 @@ struct SectorTimeLayoutUpdateData {
     SectorTimeUpdateData sector3;
 
     GpsState gpsInfo;
+
+    LapTimerInfoUpdateData lapTimerInfo;
 };
 
 struct GpsInfoWidgetData {
@@ -65,6 +83,7 @@ struct SectorTimeLayoutUpdateInternalData {
     SectorTimeWidgetData sector3;
 
     GpsInfoWidgetData gpsInfo;
+    LapTimerInfoWidgetData lapTimerInfo;
 };
 
 #endif //LAYOUTMODELS_H

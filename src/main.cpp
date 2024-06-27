@@ -13,11 +13,20 @@
 #include "datalogger/DataLogger.h"
 #include "display/Display.h"
 #include "display/layout/SectorTimesLayout.h"
+#include "laptimer/LapTimer.h"
+
+// 52.53355247050909, 13.36706309227794
+constexpr double startLat1 = 52.53355247050909;
+constexpr double startLon1 = 13.36706309227794;
+// 52.533688461073965, 13.366889768428194
+constexpr double startLat2 = 52.533688461073965;
+constexpr double startLon2 = 13.366889768428194;
 
 GPS gps;
 Display display;
 SectorTimesLayout sectorTimesLayout(&display);
 DataLogger dataLogger("./nmea_logs", "nmea_", ".log");
+LapTimer lapTimer(startLat1, startLon1, startLat2, startLon2);
 
 int displayUpdateIntervalMs = 250;
 long long displayUpdatedAtMs = 0;
@@ -80,9 +89,14 @@ void setup() {
 void handleUpdate(const GpsUpdate &update) {
     std::visit([](const auto &arg) {
         if constexpr (std::is_same_v<std::decay_t<decltype(arg)>, PositionUpdate>) {
-            spdlog::info("Position Update. NMEA: {}; Lat: {}; Lon: {}", arg.nmeaSentence, arg.latitude, arg.longitude);
+            spdlog::info("Position Update. NMEA: {}; Fix: {}; Lat: {}; Lon: {}", arg.nmeaSentence, arg.hasFix,
+                         arg.latitude, arg.longitude);
 
             dataLogger.writeToFile(arg.nmeaSentence);
+
+            if (arg.hasFix) {
+                lapTimer.addPosition(arg.latitude, arg.longitude);
+            }
         } else if constexpr (std::is_same_v<std::decay_t<decltype(arg)>, SpeedUpdate>) {
             // spdlog::info("Speed Update. Speed: {}", arg.speed);
         }
@@ -117,7 +131,9 @@ void updateDisplayIfNeeded() {
             SectorTimeUpdateData{SLOWER_THEN_PREVIOUS_LAP, oss.str()},
             SectorTimeUpdateData{BEST, "-0.07"},
 
-            gps.currentState
+            gps.currentState,
+
+            LapTimerInfoUpdateData{lapTimer.getNumberOfLaps(), lapTimer.getLatestDistance()}
         };
         sectorTimesLayout.update(updateData);
 

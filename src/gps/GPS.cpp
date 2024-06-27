@@ -152,6 +152,7 @@ void GPS::readAvailable() {
                                 if (minmea_parse_gll(&frame, nmeaBuffer)) {
                                     updates.push_back(PositionUpdate{
                                         std::string(nmeaBuffer),
+                                        false,
                                         minmea_tocoord(&frame.latitude),
                                         minmea_tocoord(&frame.longitude)
                                     });
@@ -183,6 +184,7 @@ void GPS::readAvailable() {
 
                                     updates.push_back(PositionUpdate{
                                         std::string(nmeaBuffer),
+                                        frame.valid,
                                         minmea_tocoord(&frame.latitude),
                                         minmea_tocoord(&frame.longitude)
                                     });
@@ -210,6 +212,7 @@ void GPS::readAvailable() {
 
                                     updates.push_back(PositionUpdate{
                                         std::string(nmeaBuffer),
+                                        frame.fix_quality > 0,
                                         minmea_tocoord(&frame.latitude),
                                         minmea_tocoord(&frame.longitude)
                                     });

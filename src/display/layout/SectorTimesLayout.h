@@ -18,11 +18,15 @@ class SectorTimesLayout {
 
     GpsInfoWidget gpsInfoWidget;
 
+    LapTimerInfoWidget lapTimerInfoWidget;
+
     lv_style_t sectorTimeTextStyle;
     lv_style_t sectorTimeContainerStyle;
     lv_style_t mainContainerStyle;
     lv_style_t gpsInfoContainerStyle;
     lv_style_t gpsInfoTextStyle;
+    lv_style_t lapTimerInfoContainerStyle;
+    lv_style_t lapTimerInfoTextStyle;
 
     static lv_color_t toColor(SectorState sectorState);
 
@@ -39,11 +43,15 @@ public:
 
     GpsInfoWidget createGpsInfoWidget(lv_obj_t *parent, int32_t offsetY) const;
 
+    LapTimerInfoWidget createLapTimerInfoWidget(lv_obj_t *parent, int32_t offsetY) const;
+
     static void updateSectorTimes(void *param);
 
     static void updateSectorTimeWidget(SectorTimeWidgetData &sectorTimeWidgetData);
 
     static void updateGpsInfoWidget(GpsInfoWidgetData &gpsInfoWidgetData);
+
+    static void updateLapTimerInfoWidget(LapTimerInfoWidgetData &lapTimerInfoWidgetData);
 };
 
 

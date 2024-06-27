@@ -9,6 +9,7 @@ struct GpsUpdateBase {
 };
 
 struct PositionUpdate : GpsUpdateBase {
+    bool hasFix{};
     float latitude{};
     float longitude{};
 };
