@@ -1,8 +1,5 @@
 #include "SectorTimesLayout.h"
 
-#include <iomanip>
-#include <sstream>
-
 #include "Colors.h"
 #include "spdlog/spdlog.h"
 
@@ -14,6 +11,7 @@ SectorTimesLayout::SectorTimesLayout(Display *_display): display(_display),
 SectorTimesLayout::~SectorTimesLayout() {
     delete sectorsPanel;
     delete gpsInfoPanel;
+    delete lapTimerPanel;
 }
 
 void SectorTimesLayout::setup() {
@@ -36,8 +34,7 @@ void SectorTimesLayout::setup() {
 
     sectorsPanel = new ColoredSectorTimesPanel(mainContainer, lv_pct(15));
     gpsInfoPanel = new GpsPositionExtendedInfoPanel(mainContainer);
-
-    lapTimerInfoWidget = createLapTimerInfoWidget(mainContainer);
+    lapTimerPanel = new SimpleLapTimerInfoPanel(mainContainer);
 
     std::this_thread::sleep_for(std::chrono::seconds(1));
 
@@ -53,28 +50,14 @@ void SectorTimesLayout::initStyles() {
     lv_style_set_pad_all(&mainContainerStyle, 0);
     lv_style_set_pad_column(&mainContainerStyle, 0);
     lv_style_set_pad_row(&mainContainerStyle, 0);
-
-    lv_style_init(&lapTimerInfoContainerStyle);
-    lv_style_set_radius(&lapTimerInfoContainerStyle, 0);
-    lv_style_set_pad_all(&lapTimerInfoContainerStyle, 0);
-    lv_style_set_pad_top(&lapTimerInfoContainerStyle, 2);
-    lv_style_set_pad_row(&lapTimerInfoContainerStyle, 0);
-    lv_style_set_pad_column(&lapTimerInfoContainerStyle, 0);
-    lv_style_set_border_side(&lapTimerInfoContainerStyle, LV_BORDER_SIDE_BOTTOM);
-    lv_style_set_border_width(&lapTimerInfoContainerStyle, 1);
-
-    lv_style_init(&lapTimerInfoTextStyle);
-    lv_style_set_text_font(&lapTimerInfoTextStyle, &martian_mono_16);
 }
 
 void SectorTimesLayout::updateSectorTimes(void *param) {
     auto *data = static_cast<SectorTimeLayoutUpdateInternalData *>(param);
     if (data) {
         data->sectors.widget->update(data->sectors.data);
-
         data->gpsInfo.widget->update(data->gpsInfo.data);
-
-        updateLapTimerInfoWidget(data->lapTimerInfo);
+        data->lapTimerInfo.widget->update(data->lapTimerInfo.data);
     }
 
     delete data;
@@ -87,47 +70,10 @@ void SectorTimesLayout::update(const SectorTimeLayoutUpdateData &updateData) con
     auto *data = new SectorTimeLayoutUpdateInternalData{
         {sectorsPanel, {updateData.sector1, updateData.sector2, updateData.sector3}},
         {gpsInfoPanel, updateData.gpsInfo},
-        {lapTimerInfoWidget, updateData.lapTimerInfo}
+        {lapTimerPanel, updateData.lapTimerInfo}
     };
 
     lv_async_call(updateSectorTimes, data);
 
     spdlog::trace("Display.updateSectorTimes -- Update scheduled");
-}
-
-LapTimerInfoWidget SectorTimesLayout::createLapTimerInfoWidget(lv_obj_t *parent) const {
-    lv_obj_t *flexContainer = lv_obj_create(parent);
-    lv_obj_add_style(flexContainer, &lapTimerInfoContainerStyle, LV_PART_MAIN);
-    lv_obj_set_size(flexContainer, lv_pct(100), LV_SIZE_CONTENT);
-    lv_obj_set_flex_flow(flexContainer, LV_FLEX_FLOW_COLUMN);
-    lv_obj_set_scrollbar_mode(flexContainer, LV_SCROLLBAR_MODE_OFF);
-    lv_obj_set_style_bg_color(flexContainer, colorFasterThanPrevious, LV_PART_MAIN);
-
-    lv_obj_t *lapCounterLabel = lv_label_create(flexContainer);
-    lv_obj_set_size(lapCounterLabel, lv_pct(100), LV_SIZE_CONTENT);
-    lv_obj_add_style(lapCounterLabel, &lapTimerInfoTextStyle, LV_PART_MAIN);
-    lv_label_set_text(lapCounterLabel, "Lap: ");
-
-    lv_obj_t *distanceLabel = lv_label_create(flexContainer);
-    lv_obj_set_size(distanceLabel, lv_pct(100), LV_SIZE_CONTENT);
-    lv_obj_add_style(distanceLabel, &lapTimerInfoTextStyle, LV_PART_MAIN);
-    lv_label_set_text(distanceLabel, "Distance: ");
-
-    return LapTimerInfoWidget{flexContainer, distanceLabel, lapCounterLabel};
-}
-
-void SectorTimesLayout::updateLapTimerInfoWidget(LapTimerInfoWidgetData &lapTimerInfoWidgetData) {
-    spdlog::trace("Display.updateLapTimerInfoWidget -- Started");
-
-    std::ostringstream oss;
-
-    oss << "Lap: " << std::setw(2) << std::setfill(' ') << lapTimerInfoWidgetData.data.lapCounter;
-    lv_label_set_text(lapTimerInfoWidgetData.widget.lapCounterLabel, oss.str().c_str());
-
-    oss.str("");
-    oss.clear();
-    oss << "Distance: " << std::fixed << std::setprecision(6) << lapTimerInfoWidgetData.data.distance;
-    lv_label_set_text(lapTimerInfoWidgetData.widget.distanceLabel, oss.str().c_str());
-
-    spdlog::trace("Display.updateLapTimerInfoWidget -- Finished");
 }

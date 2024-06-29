@@ -133,7 +133,7 @@ void updateDisplayIfNeeded() {
 
             gps.currentState,
 
-            LapTimerInfoUpdateData{lapTimer.getNumberOfLaps(), lapTimer.getLatestDistance()}
+            LapTimerUpdateData{lapTimer.getNumberOfLaps(), lapTimer.getLatestDistance()}
         };
         sectorTimesLayout.update(updateData);
 

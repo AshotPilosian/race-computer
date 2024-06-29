@@ -1,25 +1,9 @@
 #ifndef LAYOUTMODELS_H
 #define LAYOUTMODELS_H
 
-#include "lvgl.h"
 #include "../gps/GpsModels.h"
+#include "panels/laptimer/SimpleLapTimerInfoPanel.h"
 #include "widgets/sector/SectorTimeColoredWidget.h"
-
-struct LapTimerInfoUpdateData {
-    int lapCounter;
-    double distance;
-};
-
-struct LapTimerInfoWidget {
-    lv_obj_t *container;
-    lv_obj_t *distanceLabel;
-    lv_obj_t *lapCounterLabel;
-};
-
-struct LapTimerInfoWidgetData {
-    LapTimerInfoWidget widget;
-    LapTimerInfoUpdateData data;
-};
 
 struct SectorTimeLayoutUpdateData {
     SectorTimeUpdateData sector1;
@@ -28,7 +12,7 @@ struct SectorTimeLayoutUpdateData {
 
     GpsState gpsInfo;
 
-    LapTimerInfoUpdateData lapTimerInfo{};
+    LapTimerUpdateData lapTimerInfo{};
 };
 
 #endif //LAYOUTMODELS_H
