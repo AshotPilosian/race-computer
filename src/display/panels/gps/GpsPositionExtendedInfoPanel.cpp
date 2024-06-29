@@ -6,6 +6,8 @@
 
 #include "spdlog/spdlog.h"
 
+#include "../../font/Fonts.h"
+
 GpsPositionExtendedInfoPanel::GpsPositionExtendedInfoPanel(lv_obj_t *parent): parent(parent) {
     initStyles();
     init();
@@ -62,8 +64,6 @@ void GpsPositionExtendedInfoPanel::update(const GpsState &data) const {
 
 // Private
 void GpsPositionExtendedInfoPanel::initStyles() {
-    LV_FONT_DECLARE(martian_mono_16);
-
     lv_style_init(&containerStyle);
     lv_style_set_radius(&containerStyle, 0);
     lv_style_set_pad_all(&containerStyle, 0);

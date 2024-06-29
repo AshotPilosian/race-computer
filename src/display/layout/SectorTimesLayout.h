@@ -4,10 +4,10 @@
 #include <lvgl.h>
 
 #include "../Display.h"
+#include "../panels/gps/GpsPositionExtendedInfoPanel.h"
+#include "../panels/sector/ColoredSectorTimesPanel.h"
+#include "../panels/laptimer/SimpleLapTimerInfoPanel.h"
 #include "LayoutModels.h"
-#include "panels/gps/GpsPositionExtendedInfoPanel.h"
-#include "panels/laptimer/SimpleLapTimerInfoPanel.h"
-#include "panels/sector/ColoredSectorTimesPanel.h"
 
 struct ColoredSectorTimesPanelUpdateData {
     ColoredSectorTimesPanel *widget{};

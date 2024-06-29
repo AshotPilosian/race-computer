@@ -1,10 +1,11 @@
-
 #include "SimpleLapTimerInfoPanel.h"
 
 #include <iomanip>
 #include <sstream>
 
 #include "spdlog/spdlog.h"
+
+#include "../../font/Fonts.h"
 
 SimpleLapTimerInfoPanel::SimpleLapTimerInfoPanel(lv_obj_t *parent): parent(parent) {
     initStyles();
@@ -29,8 +30,6 @@ void SimpleLapTimerInfoPanel::update(const LapTimerUpdateData &data) const {
 
 // Private
 void SimpleLapTimerInfoPanel::initStyles() {
-    LV_FONT_DECLARE(martian_mono_16);
-
     lv_style_init(&containerStyle);
     lv_style_set_radius(&containerStyle, 0);
     lv_style_set_pad_all(&containerStyle, 0);

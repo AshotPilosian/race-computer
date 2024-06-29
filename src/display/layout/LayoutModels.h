@@ -2,8 +2,8 @@
 #define LAYOUTMODELS_H
 
 #include "../gps/GpsModels.h"
-#include "panels/laptimer/SimpleLapTimerInfoPanel.h"
-#include "widgets/sector/SectorTimeColoredWidget.h"
+#include "../panels/laptimer/SimpleLapTimerInfoPanel.h"
+#include "../widgets/sector/SectorTimeColoredWidget.h"
 
 struct SectorTimeLayoutUpdateData {
     SectorTimeUpdateData sector1;

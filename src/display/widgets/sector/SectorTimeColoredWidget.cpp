@@ -2,6 +2,7 @@
 
 #include "spdlog/spdlog.h"
 
+#include "../../font/Fonts.h"
 #include "../../Colors.h"
 
 SectorTimeColoredWidget::SectorTimeColoredWidget(lv_obj_t *parent, const int32_t width): parent(parent), width(width) {
@@ -23,8 +24,6 @@ void SectorTimeColoredWidget::update(const SectorTimeUpdateData &sectorTimeUpdat
 
 // Private
 void SectorTimeColoredWidget::initStyles() {
-    LV_FONT_DECLARE(martian_mono_20);
-
     lv_style_init(&textStyle);
     lv_style_set_text_font(&textStyle, &martian_mono_20);
 

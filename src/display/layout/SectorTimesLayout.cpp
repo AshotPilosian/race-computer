@@ -1,6 +1,6 @@
 #include "SectorTimesLayout.h"
 
-#include "Colors.h"
+#include "../Colors.h"
 #include "spdlog/spdlog.h"
 
 SectorTimesLayout::SectorTimesLayout(Display *display): display(display),
