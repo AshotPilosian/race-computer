@@ -36,7 +36,7 @@ class SectorTimeColoredWidget {
 public:
     SectorTimeColoredWidget(lv_obj_t *parent, int32_t width);
 
-    void update(SectorTimeUpdateData &sectorTimeUpdateData) const;
+    void update(const SectorTimeUpdateData &sectorTimeUpdateData) const;
 };
 
 #endif //SECTORTIMECOLOREDWIDGET_H

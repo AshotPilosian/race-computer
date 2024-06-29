@@ -6,22 +6,25 @@
 #include "../Display.h"
 #include "LayoutModels.h"
 #include "panels/gps/GpsPositionExtendedInfoPanel.h"
+#include "panels/sector/ColoredSectorTimesPanel.h"
+
+struct ColoredSectorTimesPanelUpdateData {
+    ColoredSectorTimesPanel *widget{};
+    SectorTimesUpdateData data;
+};
 
 struct SectorTimeColoredWidgetUpdateData {
     SectorTimeColoredWidget *widget{};
     SectorTimeUpdateData data;
 };
 
-struct GpsPositionExtendedInfoPanelUpdateData{
+struct GpsPositionExtendedInfoPanelUpdateData {
     GpsPositionExtendedInfoPanel *widget{};
     GpsState data;
 };
 
 struct SectorTimeLayoutUpdateInternalData {
-    SectorTimeColoredWidgetUpdateData sector1{};
-    SectorTimeColoredWidgetUpdateData sector2{};
-    SectorTimeColoredWidgetUpdateData sector3{};
-
+    ColoredSectorTimesPanelUpdateData sectors;
     GpsPositionExtendedInfoPanelUpdateData gpsInfo{};
     LapTimerInfoWidgetData lapTimerInfo{};
 };
@@ -31,10 +34,7 @@ class SectorTimesLayout {
 
     lv_obj_t *mainContainer;
 
-    SectorTimeColoredWidget *sectorWidget1;
-    SectorTimeColoredWidget *sectorWidget2;
-    SectorTimeColoredWidget *sectorWidget3;
-
+    ColoredSectorTimesPanel *sectorsPanel;
     GpsPositionExtendedInfoPanel *gpsInfoPanel;
 
     LapTimerInfoWidget lapTimerInfoWidget;
@@ -42,10 +42,10 @@ class SectorTimesLayout {
     lv_style_t mainContainerStyle;
     lv_style_t lapTimerInfoContainerStyle;
     lv_style_t lapTimerInfoTextStyle;
-    lv_style_t sectorTimesContainerStyle;
 
 public:
     explicit SectorTimesLayout(Display *_display);
+
     ~SectorTimesLayout();
 
     void setup();

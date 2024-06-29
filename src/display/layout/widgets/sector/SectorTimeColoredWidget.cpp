@@ -8,7 +8,7 @@ SectorTimeColoredWidget::SectorTimeColoredWidget(lv_obj_t *parent, const int32_t
     initWidget(parent, width);
 }
 
-void SectorTimeColoredWidget::update(SectorTimeUpdateData &sectorTimeUpdateData) const {
+void SectorTimeColoredWidget::update(const SectorTimeUpdateData &sectorTimeUpdateData) const {
     spdlog::trace("SectorTimeColoredWidget.update -- Started");
 
     lv_obj_set_style_bg_color(widget.container, toColor(sectorTimeUpdateData.state), LV_PART_MAIN);
