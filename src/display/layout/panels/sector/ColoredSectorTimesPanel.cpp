@@ -20,18 +20,18 @@ void ColoredSectorTimesPanel::update(const SectorTimesUpdateData &data) const {
 
 // Private
 void ColoredSectorTimesPanel::initStyles() {
-    lv_style_init(&sectorTimesContainerStyle);
-    lv_style_set_radius(&sectorTimesContainerStyle, 0);
-    lv_style_set_pad_all(&sectorTimesContainerStyle, 0);
-    lv_style_set_pad_column(&sectorTimesContainerStyle, 0);
-    lv_style_set_pad_row(&sectorTimesContainerStyle, 0);
-    lv_style_set_border_side(&sectorTimesContainerStyle, LV_BORDER_SIDE_BOTTOM);
-    lv_style_set_border_width(&sectorTimesContainerStyle, 1);
+    lv_style_init(&containerStyle);
+    lv_style_set_radius(&containerStyle, 0);
+    lv_style_set_pad_all(&containerStyle, 0);
+    lv_style_set_pad_column(&containerStyle, 0);
+    lv_style_set_pad_row(&containerStyle, 0);
+    lv_style_set_border_side(&containerStyle, LV_BORDER_SIDE_BOTTOM);
+    lv_style_set_border_width(&containerStyle, 1);
 }
 
 void ColoredSectorTimesPanel::init() {
     widget.container = lv_obj_create(parent);
-    lv_obj_add_style(widget.container, &sectorTimesContainerStyle, LV_PART_MAIN);
+    lv_obj_add_style(widget.container, &containerStyle, LV_PART_MAIN);
     lv_obj_set_size(widget.container, lv_pct(100), height);
     lv_obj_set_pos(widget.container, 0, 0);
     lv_obj_set_flex_flow(widget.container, LV_FLEX_FLOW_ROW);

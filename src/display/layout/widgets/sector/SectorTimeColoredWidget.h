@@ -23,13 +23,16 @@ struct SectorTimeColoredWidgetInternal {
 };
 
 class SectorTimeColoredWidget {
-    lv_style_t sectorTimeTextStyle{};
-    lv_style_t sectorTimeContainerStyle{};
+    lv_obj_t *parent;
+    int32_t width;
+
+    lv_style_t containerStyle{};
+    lv_style_t textStyle{};
     SectorTimeColoredWidgetInternal widget{};
 
     void initStyles();
 
-    void initWidget(lv_obj_t *parent, int32_t width);
+    void init();
 
     static lv_color_t toColor(SectorState sectorState);
 

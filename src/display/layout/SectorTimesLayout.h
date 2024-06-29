@@ -41,18 +41,20 @@ class SectorTimesLayout {
 
     lv_style_t mainContainerStyle;
 
+    void initStyles();
+
+    void init();
+
+    static void doUpdate(void *param);
+
 public:
-    explicit SectorTimesLayout(Display *_display);
+    explicit SectorTimesLayout(Display *display);
 
     ~SectorTimesLayout();
 
     void setup();
 
-    void initStyles();
-
     void update(const SectorTimeLayoutUpdateData &updateData) const;
-
-    static void updateSectorTimes(void *param);
 };
 
 

@@ -6,9 +6,9 @@
 
 #include "spdlog/spdlog.h"
 
-GpsPositionExtendedInfoPanel::GpsPositionExtendedInfoPanel(lv_obj_t *parent) {
+GpsPositionExtendedInfoPanel::GpsPositionExtendedInfoPanel(lv_obj_t *parent): parent(parent) {
     initStyles();
-    init(parent);
+    init();
 }
 
 void GpsPositionExtendedInfoPanel::update(const GpsState &data) const {
@@ -64,53 +64,53 @@ void GpsPositionExtendedInfoPanel::update(const GpsState &data) const {
 void GpsPositionExtendedInfoPanel::initStyles() {
     LV_FONT_DECLARE(martian_mono_16);
 
-    lv_style_init(&gpsInfoContainerStyle);
-    lv_style_set_radius(&gpsInfoContainerStyle, 0);
-    lv_style_set_pad_all(&gpsInfoContainerStyle, 0);
-    lv_style_set_pad_top(&gpsInfoContainerStyle, 2);
-    lv_style_set_pad_row(&gpsInfoContainerStyle, 0);
-    lv_style_set_pad_column(&gpsInfoContainerStyle, 0);
-    lv_style_set_border_side(&gpsInfoContainerStyle, LV_BORDER_SIDE_BOTTOM);
-    lv_style_set_border_width(&gpsInfoContainerStyle, 1);
+    lv_style_init(&containerStyle);
+    lv_style_set_radius(&containerStyle, 0);
+    lv_style_set_pad_all(&containerStyle, 0);
+    lv_style_set_pad_top(&containerStyle, 2);
+    lv_style_set_pad_row(&containerStyle, 0);
+    lv_style_set_pad_column(&containerStyle, 0);
+    lv_style_set_border_side(&containerStyle, LV_BORDER_SIDE_BOTTOM);
+    lv_style_set_border_width(&containerStyle, 1);
 
-    lv_style_init(&gpsInfoTextStyle);
-    lv_style_set_text_font(&gpsInfoTextStyle, &martian_mono_16);
+    lv_style_init(&textStyle);
+    lv_style_set_text_font(&textStyle, &martian_mono_16);
 }
 
-void GpsPositionExtendedInfoPanel::init(lv_obj_t *parent) {
+void GpsPositionExtendedInfoPanel::init() {
     widget.container = lv_obj_create(parent);
-    lv_obj_add_style(widget.container, &gpsInfoContainerStyle, LV_PART_MAIN);
+    lv_obj_add_style(widget.container, &containerStyle, LV_PART_MAIN);
     lv_obj_set_size(widget.container, lv_pct(100), LV_SIZE_CONTENT);
     lv_obj_set_flex_flow(widget.container, LV_FLEX_FLOW_COLUMN);
     lv_obj_set_scrollbar_mode(widget.container, LV_SCROLLBAR_MODE_OFF);
 
     widget.satStatsLabel = lv_label_create(widget.container);
     lv_obj_set_size(widget.satStatsLabel, lv_pct(100), LV_SIZE_CONTENT);
-    lv_obj_add_style(widget.satStatsLabel, &gpsInfoTextStyle, LV_PART_MAIN);
+    lv_obj_add_style(widget.satStatsLabel, &textStyle, LV_PART_MAIN);
     lv_label_set_text(widget.satStatsLabel, "GP: ");
 
     widget.fixInfoLabel = lv_label_create(widget.container);
     lv_obj_set_size(widget.fixInfoLabel, lv_pct(100), LV_SIZE_CONTENT);
-    lv_obj_add_style(widget.fixInfoLabel, &gpsInfoTextStyle, LV_PART_MAIN);
+    lv_obj_add_style(widget.fixInfoLabel, &textStyle, LV_PART_MAIN);
     lv_label_set_text(widget.fixInfoLabel, "Fix: ");
 
     widget.timeLabel = lv_label_create(widget.container);
     lv_obj_set_size(widget.timeLabel, lv_pct(100), LV_SIZE_CONTENT);
-    lv_obj_add_style(widget.timeLabel, &gpsInfoTextStyle, LV_PART_MAIN);
+    lv_obj_add_style(widget.timeLabel, &textStyle, LV_PART_MAIN);
     lv_label_set_text(widget.timeLabel, "Time: ");
 
     widget.latLabel = lv_label_create(widget.container);
     lv_obj_set_size(widget.latLabel, lv_pct(100), LV_SIZE_CONTENT);
-    lv_obj_add_style(widget.latLabel, &gpsInfoTextStyle, LV_PART_MAIN);
+    lv_obj_add_style(widget.latLabel, &textStyle, LV_PART_MAIN);
     lv_label_set_text(widget.latLabel, "Lat: ");
 
     widget.lonLabel = lv_label_create(widget.container);
     lv_obj_set_size(widget.lonLabel, lv_pct(100), LV_SIZE_CONTENT);
-    lv_obj_add_style(widget.lonLabel, &gpsInfoTextStyle, LV_PART_MAIN);
+    lv_obj_add_style(widget.lonLabel, &textStyle, LV_PART_MAIN);
     lv_label_set_text(widget.lonLabel, "Lon: ");
 
     widget.speedLabel = lv_label_create(widget.container);
     lv_obj_set_size(widget.speedLabel, lv_pct(100), LV_SIZE_CONTENT);
-    lv_obj_add_style(widget.speedLabel, &gpsInfoTextStyle, LV_PART_MAIN);
+    lv_obj_add_style(widget.speedLabel, &textStyle, LV_PART_MAIN);
     lv_label_set_text(widget.speedLabel, "Speed: ");
 }

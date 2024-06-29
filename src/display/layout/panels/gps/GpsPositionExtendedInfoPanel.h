@@ -16,13 +16,15 @@ struct GpsPositionExtendedInfoPanelInternal {
 };
 
 class GpsPositionExtendedInfoPanel {
-    lv_style_t gpsInfoContainerStyle{};
-    lv_style_t gpsInfoTextStyle{};
+    lv_obj_t *parent;
+
+    lv_style_t containerStyle{};
+    lv_style_t textStyle{};
     GpsPositionExtendedInfoPanelInternal widget{};
 
     void initStyles();
 
-    void init(lv_obj_t *parent);
+    void init();
 
 public:
     explicit GpsPositionExtendedInfoPanel(lv_obj_t *parent);
