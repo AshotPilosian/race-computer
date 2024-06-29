@@ -29,7 +29,7 @@ class GpsPositionExtendedInfoPanel {
 public:
     explicit GpsPositionExtendedInfoPanel(lv_obj_t *parent);
 
-    void update(const GpsState &data) const;
+    void update(const GpsState *data) const;
 };
 
 

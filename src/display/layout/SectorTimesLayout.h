@@ -10,24 +10,24 @@
 #include "LayoutModels.h"
 
 struct ColoredSectorTimesPanelUpdateData {
-    ColoredSectorTimesPanel *widget{};
-    SectorTimesUpdateData data;
+    const ColoredSectorTimesPanel *widget{};
+    const SectorTimesUpdateData *data{};
 };
 
 struct GpsPositionExtendedInfoPanelUpdateData {
-    GpsPositionExtendedInfoPanel *widget{};
-    GpsState data;
+    const GpsPositionExtendedInfoPanel *widget{};
+    const GpsState *data{};
 };
 
 struct SimpleLapTimerInfoPanelUpdateData {
-    SimpleLapTimerInfoPanel *widget{};
-    LapTimerUpdateData data;
+    const SimpleLapTimerInfoPanel *widget{};
+    const LapTimerUpdateData *data{};
 };
 
 struct SectorTimeLayoutUpdateInternalData {
-    ColoredSectorTimesPanelUpdateData sectors{};
-    GpsPositionExtendedInfoPanelUpdateData gpsInfo{};
-    SimpleLapTimerInfoPanelUpdateData lapTimerInfo{};
+    const ColoredSectorTimesPanelUpdateData *sectors{};
+    const GpsPositionExtendedInfoPanelUpdateData *gpsInfo{};
+    const SimpleLapTimerInfoPanelUpdateData *lapTimerInfo{};
 };
 
 class SectorTimesLayout {
@@ -54,7 +54,7 @@ public:
 
     void setup();
 
-    void update(const SectorTimeLayoutUpdateData &updateData) const;
+    void update(const SectorTimeLayoutUpdateData *updateData) const;
 };
 
 

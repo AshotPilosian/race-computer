@@ -12,10 +12,10 @@ ColoredSectorTimesPanel::~ColoredSectorTimesPanel() {
     delete widget.sector3;
 }
 
-void ColoredSectorTimesPanel::update(const SectorTimesUpdateData &data) const {
-    widget.sector1->update(data.sector1);
-    widget.sector2->update(data.sector2);
-    widget.sector3->update(data.sector3);
+void ColoredSectorTimesPanel::update(const SectorTimesUpdateData *data) const {
+    widget.sector1->update(data->sector1);
+    widget.sector2->update(data->sector2);
+    widget.sector3->update(data->sector3);
 }
 
 // Private

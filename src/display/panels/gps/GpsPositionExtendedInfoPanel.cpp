@@ -13,23 +13,23 @@ GpsPositionExtendedInfoPanel::GpsPositionExtendedInfoPanel(lv_obj_t *parent): pa
     init();
 }
 
-void GpsPositionExtendedInfoPanel::update(const GpsState &data) const {
+void GpsPositionExtendedInfoPanel::update(const GpsState *data) const {
     spdlog::trace("GpsPositionExtendedInfoPanel.update -- Started");
 
     std::ostringstream oss;
 
-    oss << "Fix: " << (data.hasFix ? 1 : 0) << "  "
-            << "Sat: " << std::setw(2) << std::setfill(' ') << data.numberOfSatellites << "  "
-            << "Hdop: " << std::fixed << std::setprecision(2) << data.hdop;
+    oss << "Fix: " << (data->hasFix ? 1 : 0) << "  "
+            << "Sat: " << std::setw(2) << std::setfill(' ') << data->numberOfSatellites << "  "
+            << "Hdop: " << std::fixed << std::setprecision(2) << data->hdop;
     lv_label_set_text(widget.fixInfoLabel, oss.str().c_str());
 
     oss.str("");
     oss.clear();
-    oss << "P:" << std::setw(2) << std::setfill(' ') << data.gpsSats << " "
-            << "L:" << std::setw(2) << std::setfill(' ') << data.glonassSats << " "
-            << "A:" << std::setw(2) << std::setfill(' ') << data.galileoSats << " "
-            << "B:" << std::setw(2) << std::setfill(' ') << data.beidouSats << " "
-            << "Q:" << std::setw(2) << std::setfill(' ') << data.qzssSats;
+    oss << "P:" << std::setw(2) << std::setfill(' ') << data->gpsSats << " "
+            << "L:" << std::setw(2) << std::setfill(' ') << data->glonassSats << " "
+            << "A:" << std::setw(2) << std::setfill(' ') << data->galileoSats << " "
+            << "B:" << std::setw(2) << std::setfill(' ') << data->beidouSats << " "
+            << "Q:" << std::setw(2) << std::setfill(' ') << data->qzssSats;
     lv_label_set_text(widget.satStatsLabel, oss.str().c_str());
 
     oss.str("");
@@ -38,25 +38,25 @@ void GpsPositionExtendedInfoPanel::update(const GpsState &data) const {
             // << " " << std::setw(2) << std::setfill('0') << data.day
             // << "." << std::setw(2) << std::setfill('0') << data.month
             // << "." << std::setw(4) << std::setfill('0') << data.year
-            << " " << std::setw(2) << std::setfill('0') << data.hours
-            << ":" << std::setw(2) << std::setfill('0') << data.minutes
-            << ":" << std::setw(2) << std::setfill('0') << data.seconds
-            << "." << std::setw(3) << std::setfill('0') << data.microseconds;
+            << " " << std::setw(2) << std::setfill('0') << data->hours
+            << ":" << std::setw(2) << std::setfill('0') << data->minutes
+            << ":" << std::setw(2) << std::setfill('0') << data->seconds
+            << "." << std::setw(3) << std::setfill('0') << data->microseconds;
     lv_label_set_text(widget.timeLabel, oss.str().c_str());
 
     oss.str("");
     oss.clear();
-    oss << "Lat: " << std::fixed << std::setprecision(6) << data.latitude;
+    oss << "Lat: " << std::fixed << std::setprecision(6) << data->latitude;
     lv_label_set_text(widget.latLabel, oss.str().c_str());
 
     oss.str("");
     oss.clear();
-    oss << "Lon: " << std::fixed << std::setprecision(6) << data.longitude;
+    oss << "Lon: " << std::fixed << std::setprecision(6) << data->longitude;
     lv_label_set_text(widget.lonLabel, oss.str().c_str());
 
     oss.str("");
     oss.clear();
-    oss << "Speed: " << std::fixed << std::setprecision(2) << data.speed;
+    oss << "Speed: " << std::fixed << std::setprecision(2) << data->speed;
     lv_label_set_text(widget.speedLabel, oss.str().c_str());
 
     spdlog::trace("GpsPositionExtendedInfoPanel.update -- Finished");

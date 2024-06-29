@@ -89,8 +89,7 @@ void setup() {
 void handleUpdate(const GpsUpdate &update) {
     std::visit([](const auto &arg) {
         if constexpr (std::is_same_v<std::decay_t<decltype(arg)>, PositionUpdate>) {
-            spdlog::info("Position Update. NMEA: {}; Fix: {}; Lat: {}; Lon: {}", arg.nmeaSentence, arg.hasFix,
-                         arg.latitude, arg.longitude);
+            spdlog::info("Position Update. NMEA: {}", arg.nmeaSentence);
 
             dataLogger.writeToFile(arg.nmeaSentence);
 
@@ -104,13 +103,8 @@ void handleUpdate(const GpsUpdate &update) {
 }
 
 long long getCurrentTimeMs() {
-    // Get the current time point from the system clock
     const auto now = std::chrono::system_clock::now();
-
-    // Convert the time point to a duration since epoch
     const auto duration = duration_cast<std::chrono::milliseconds>(now.time_since_epoch());
-
-    // Get the number of milliseconds
     return duration.count();
 }
 
@@ -126,15 +120,16 @@ void updateDisplayIfNeeded() {
         std::ostringstream oss;
         oss << std::fixed << std::setprecision(2) << "+" << sector2FakeTimeCounter;
 
-        const SectorTimeLayoutUpdateData updateData = {
-            SectorTimeUpdateData{FASTER_THEN_PREVIOUS_LAP, "-0.40"},
-            SectorTimeUpdateData{SLOWER_THEN_PREVIOUS_LAP, oss.str()},
-            SectorTimeUpdateData{BEST, "-0.07"},
+        const SectorTimeLayoutUpdateData *updateData = new SectorTimeLayoutUpdateData(
+            SectorTimeUpdateData(FASTER_THEN_PREVIOUS_LAP, "-0.40"),
+            SectorTimeUpdateData(SLOWER_THEN_PREVIOUS_LAP, oss.str()),
+            SectorTimeUpdateData(BEST, "-0.07"),
 
             gps.currentState,
 
-            LapTimerUpdateData{lapTimer.getNumberOfLaps(), lapTimer.getLatestDistance()}
-        };
+            LapTimerUpdateData(lapTimer.getNumberOfLaps(), lapTimer.getLatestDistance())
+        );
+
         sectorTimesLayout.update(updateData);
 
         displayUpdatedAtMs = currentTimeMs;

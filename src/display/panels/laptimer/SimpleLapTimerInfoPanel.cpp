@@ -12,17 +12,17 @@ SimpleLapTimerInfoPanel::SimpleLapTimerInfoPanel(lv_obj_t *parent): parent(paren
     init();
 }
 
-void SimpleLapTimerInfoPanel::update(const LapTimerUpdateData &data) const {
+void SimpleLapTimerInfoPanel::update(const LapTimerUpdateData *data) const {
     spdlog::trace("SimpleLapTimerInfoPanel::update -- Started");
 
     std::ostringstream oss;
 
-    oss << "Lap: " << std::setw(2) << std::setfill(' ') << data.lapCounter;
+    oss << "Lap: " << std::setw(2) << std::setfill(' ') << data->lapCounter;
     lv_label_set_text(widget.lapCounterLabel, oss.str().c_str());
 
     oss.str("");
     oss.clear();
-    oss << "Distance: " << std::fixed << std::setprecision(6) << data.distance;
+    oss << "Distance: " << std::fixed << std::setprecision(6) << data->distance;
     lv_label_set_text(widget.distanceLabel, oss.str().c_str());
 
     spdlog::trace("SimpleLapTimerInfoPanel::update -- Finished");

@@ -14,13 +14,13 @@ class GPS {
 
     std::optional <GpsUpdateList> unprocessedUpdates;
 
-    uint8_t calculateChecksum(const char *sentence);
+    static uint8_t calculateChecksum(const char *sentence);
 
-    std::optional <uint8_t> extractChecksum(const char *sentence);
+    static std::optional <uint8_t> extractChecksum(const char *sentence);
 
-    bool validateChecksum(const char *sentence);
+    static bool validateChecksum(const char *sentence);
 
-    int openUartToGpsModule(unsigned int baudRate);
+    static int openUartToGpsModule(unsigned int baudRate);
 
     void writeCommandToModule(std::span<const unsigned char> commandBytes) const;
 
@@ -35,7 +35,7 @@ public:
 
     std::optional <GpsUpdateList> getUnprocessedUpdates();
 
-    void shutdown();
+    void shutdown() const;
 };
 
 

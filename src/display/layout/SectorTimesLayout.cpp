@@ -33,14 +33,17 @@ void SectorTimesLayout::setup() {
     spdlog::info("SectorTimesLayout setup completed");
 }
 
-void SectorTimesLayout::update(const SectorTimeLayoutUpdateData &updateData) const {
+void SectorTimesLayout::update(const SectorTimeLayoutUpdateData *updateData) const {
     spdlog::trace("SectorTimesLayout::update -- Schedule update");
 
     // Allocate the data on the heap to ensure it remains valid for async call
     auto *data = new SectorTimeLayoutUpdateInternalData{
-        {sectorsPanel, {updateData.sector1, updateData.sector2, updateData.sector3}},
-        {gpsInfoPanel, updateData.gpsInfo},
-        {lapTimerPanel, updateData.lapTimerInfo}
+        new ColoredSectorTimesPanelUpdateData(
+            sectorsPanel,
+            new SectorTimesUpdateData(updateData->sector1, updateData->sector2, updateData->sector3)
+        ),
+        new GpsPositionExtendedInfoPanelUpdateData(gpsInfoPanel, &(updateData->gpsInfo)),
+        new SimpleLapTimerInfoPanelUpdateData(lapTimerPanel, &(updateData->lapTimerInfo))
     };
 
     lv_async_call(doUpdate, data);
@@ -74,9 +77,9 @@ void SectorTimesLayout::init() {
 void SectorTimesLayout::doUpdate(void *param) {
     const auto *data = static_cast<SectorTimeLayoutUpdateInternalData *>(param);
     if (data) {
-        data->sectors.widget->update(data->sectors.data);
-        data->gpsInfo.widget->update(data->gpsInfo.data);
-        data->lapTimerInfo.widget->update(data->lapTimerInfo.data);
+        data->sectors->widget->update(data->sectors->data);
+        data->gpsInfo->widget->update(data->gpsInfo->data);
+        data->lapTimerInfo->widget->update(data->lapTimerInfo->data);
     }
 
     delete data;

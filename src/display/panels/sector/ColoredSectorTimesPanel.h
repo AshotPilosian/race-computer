@@ -33,7 +33,7 @@ public:
     ColoredSectorTimesPanel(lv_obj_t *parent, int32_t height);
     ~ColoredSectorTimesPanel();
 
-    void update(const SectorTimesUpdateData &data) const;
+    void update(const SectorTimesUpdateData *data) const;
 };
 
 #endif //COLOREDSECTORTIMESPANEL_H

@@ -28,7 +28,7 @@ class SimpleLapTimerInfoPanel {
 public:
     explicit SimpleLapTimerInfoPanel(lv_obj_t *parent);
 
-    void update(const LapTimerUpdateData &data) const;
+    void update(const LapTimerUpdateData *data) const;
 };
 
 

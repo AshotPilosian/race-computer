@@ -1,6 +1,5 @@
 #include <wiringx.h>
 #include <optional>
-#include <cstdio>
 #include <stdexcept>
 #include <cstdint>
 #include <cstring>
@@ -43,8 +42,8 @@ void GPS::setup() {
     spdlog::info("GPS UART setup completed. FD: {}", uartFd);
 }
 
-int GPS::openUartToGpsModule(unsigned int baudRate) {
-    struct wiringXSerial_t wiringXSerial = {baudRate, 8, 'n', 1, 'n'};
+int GPS::openUartToGpsModule(const unsigned int baudRate) {
+    const wiringXSerial_t wiringXSerial = {baudRate, 8, 'n', 1, 'n'};
     int fd;
 
     if ((fd = wiringXSerialOpen("/dev/ttyS1", wiringXSerial)) < 0) {
@@ -57,7 +56,7 @@ int GPS::openUartToGpsModule(unsigned int baudRate) {
     return fd;
 }
 
-void GPS::shutdown() {
+void GPS::shutdown() const {
     spdlog::info("Closing GPS connection");
 
     wiringXSerialClose(uartFd);
@@ -83,22 +82,22 @@ uint8_t GPS::calculateChecksum(const char *sentence) {
 std::optional<uint8_t> GPS::extractChecksum(const char *sentence) {
     // Find the '*' character in the sentence
     const char *checksumStr = strchr(sentence, '*');
-    if (checksumStr == NULL || strlen(checksumStr) < 3) {
+    if (checksumStr == nullptr || strlen(checksumStr) < 3) {
         // '*' not found or not enough characters after '*' for checksum
         return std::nullopt;
     }
 
     // Extract the checksum string and convert it to an integer
-    return (uint8_t) strtol(checksumStr + 1, NULL, 16);
+    return static_cast<uint8_t>(strtol(checksumStr + 1, nullptr, 16));
 }
 
 bool GPS::validateChecksum(const char *sentence) {
-    std::optional<uint8_t> extractedChecksum = extractChecksum(sentence);
+    const std::optional<uint8_t> extractedChecksum = extractChecksum(sentence);
     if (!extractedChecksum.has_value()) {
         return false;
     }
 
-    uint8_t calculatedChecksum = calculateChecksum(sentence);
+    const uint8_t calculatedChecksum = calculateChecksum(sentence);
 
     return calculatedChecksum == extractedChecksum.value();
 }
@@ -106,8 +105,8 @@ bool GPS::validateChecksum(const char *sentence) {
 void GPS::readAvailable() {
     auto updates = unprocessedUpdates.value_or(GpsUpdateList{});
 
-    int availableBytes = wiringXSerialDataAvail(uartFd);
-    if (availableBytes > 0) {
+    if (int availableBytes = wiringXSerialDataAvail(uartFd);
+        availableBytes > 0) {
         spdlog::trace("Received bytes: {}", availableBytes);
         while (availableBytes--) {
             char c = wiringXSerialGetChar(uartFd);
@@ -122,11 +121,11 @@ void GPS::readAvailable() {
 
                         switch (minmea_sentence_id(nmeaBuffer, false)) {
                             case MINMEA_SENTENCE_VTG: {
-                                minmea_sentence_vtg frame;
+                                minmea_sentence_vtg frame{};
                                 if (minmea_parse_vtg(&frame, nmeaBuffer)) {
                                     currentState.speed = minmea_tofloat(&frame.speed_kph);
 
-                                    updates.push_back(SpeedUpdate{
+                                    updates.emplace_back(SpeedUpdate{
                                         std::string(nmeaBuffer), minmea_tofloat(&frame.speed_kph)
                                     });
                                 } else {
@@ -136,9 +135,9 @@ void GPS::readAvailable() {
                             break;
 
                             case MINMEA_SENTENCE_GSA: {
-                                minmea_sentence_gsa frame;
+                                minmea_sentence_gsa frame{};
                                 if (minmea_parse_gsa(&frame, nmeaBuffer)) {
-                                    updates.push_back(SatellitesUpdate{
+                                    updates.emplace_back(SatellitesUpdate{
                                         std::string(nmeaBuffer), 0, minmea_tofloat(&frame.hdop)
                                     });
                                 } else {
@@ -148,9 +147,9 @@ void GPS::readAvailable() {
                             break;
 
                             case MINMEA_SENTENCE_GLL: {
-                                minmea_sentence_gll frame;
+                                minmea_sentence_gll frame{};
                                 if (minmea_parse_gll(&frame, nmeaBuffer)) {
-                                    updates.push_back(PositionUpdate{
+                                    updates.emplace_back(PositionUpdate{
                                         std::string(nmeaBuffer),
                                         false,
                                         minmea_tocoord(&frame.latitude),
@@ -163,7 +162,7 @@ void GPS::readAvailable() {
                             break;
 
                             case MINMEA_SENTENCE_RMC: {
-                                minmea_sentence_rmc frame;
+                                minmea_sentence_rmc frame{};
                                 if (minmea_parse_rmc(&frame, nmeaBuffer)) {
                                     currentState.hasFix = frame.valid;
 
@@ -182,7 +181,7 @@ void GPS::readAvailable() {
                                     // This speed is in knots, should be converted at first
                                     // currentState.speed = minmea_tofloat(&frame.speed);
 
-                                    updates.push_back(PositionUpdate{
+                                    updates.emplace_back(PositionUpdate{
                                         std::string(nmeaBuffer),
                                         frame.valid,
                                         minmea_tocoord(&frame.latitude),
@@ -195,7 +194,7 @@ void GPS::readAvailable() {
                             break;
 
                             case MINMEA_SENTENCE_GGA: {
-                                minmea_sentence_gga frame;
+                                minmea_sentence_gga frame{};
                                 if (minmea_parse_gga(&frame, nmeaBuffer)) {
                                     currentState.hasFix = frame.fix_quality > 0;
                                     currentState.fixQuality = frame.fix_quality;
@@ -210,7 +209,7 @@ void GPS::readAvailable() {
                                     currentState.seconds = frame.time.seconds;
                                     currentState.microseconds = frame.time.microseconds;
 
-                                    updates.push_back(PositionUpdate{
+                                    updates.emplace_back(PositionUpdate{
                                         std::string(nmeaBuffer),
                                         frame.fix_quality > 0,
                                         minmea_tocoord(&frame.latitude),
@@ -223,7 +222,7 @@ void GPS::readAvailable() {
                             break;
 
                             case MINMEA_SENTENCE_GSV: {
-                                minmea_sentence_gsv frame;
+                                minmea_sentence_gsv frame{};
                                 if (minmea_parse_gsv(&frame, nmeaBuffer)) {
                                     if (frame.msg_nr == 1) {
                                         char gnssType[3];
