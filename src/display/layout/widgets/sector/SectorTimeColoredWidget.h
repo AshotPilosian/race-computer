@@ -17,7 +17,7 @@ struct SectorTimeUpdateData {
     std::string time;
 };
 
-struct SectorTimeWidget {
+struct SectorTimeColoredWidgetInternal {
     lv_obj_t *container;
     lv_obj_t *label;
 };
@@ -25,7 +25,7 @@ struct SectorTimeWidget {
 class SectorTimeColoredWidget {
     lv_style_t sectorTimeTextStyle{};
     lv_style_t sectorTimeContainerStyle{};
-    SectorTimeWidget widget{};
+    SectorTimeColoredWidgetInternal widget{};
 
     void initStyles();
 

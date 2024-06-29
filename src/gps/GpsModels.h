@@ -1,6 +1,7 @@
 #ifndef RACE_COMPUTER_GPSMODELS_H
 #define RACE_COMPUTER_GPSMODELS_H
 
+#include <string>
 #include <variant>
 #include <vector>
 

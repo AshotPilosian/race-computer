@@ -9,13 +9,15 @@
 SectorTimesLayout::SectorTimesLayout(Display *_display): display(_display),
                                                          sectorWidget1(nullptr),
                                                          sectorWidget2(nullptr),
-                                                         sectorWidget3(nullptr) {
+                                                         sectorWidget3(nullptr),
+                                                         gpsInfoPanel(nullptr) {
 }
 
 SectorTimesLayout::~SectorTimesLayout() {
     delete sectorWidget1;
     delete sectorWidget2;
     delete sectorWidget3;
+    delete gpsInfoPanel;
 }
 
 void SectorTimesLayout::setup() {
@@ -47,7 +49,7 @@ void SectorTimesLayout::setup() {
     sectorWidget2 = new SectorTimeColoredWidget(sectorTimesContainer, lv_pct(35));
     sectorWidget3 = new SectorTimeColoredWidget(sectorTimesContainer, lv_pct(33));
 
-    gpsInfoWidget = createGpsInfoWidget(mainContainer);
+    gpsInfoPanel = new GpsPositionExtendedInfoPanel(mainContainer);
 
     lapTimerInfoWidget = createLapTimerInfoWidget(mainContainer);
 
@@ -74,18 +76,6 @@ void SectorTimesLayout::initStyles() {
     lv_style_set_border_side(&sectorTimesContainerStyle, LV_BORDER_SIDE_BOTTOM);
     lv_style_set_border_width(&sectorTimesContainerStyle, 1);
 
-    lv_style_init(&gpsInfoContainerStyle);
-    lv_style_set_radius(&gpsInfoContainerStyle, 0);
-    lv_style_set_pad_all(&gpsInfoContainerStyle, 0);
-    lv_style_set_pad_top(&gpsInfoContainerStyle, 2);
-    lv_style_set_pad_row(&gpsInfoContainerStyle, 0);
-    lv_style_set_pad_column(&gpsInfoContainerStyle, 0);
-    lv_style_set_border_side(&gpsInfoContainerStyle, LV_BORDER_SIDE_BOTTOM);
-    lv_style_set_border_width(&gpsInfoContainerStyle, 1);
-
-    lv_style_init(&gpsInfoTextStyle);
-    lv_style_set_text_font(&gpsInfoTextStyle, &martian_mono_16);
-
     lv_style_init(&lapTimerInfoContainerStyle);
     lv_style_set_radius(&lapTimerInfoContainerStyle, 0);
     lv_style_set_pad_all(&lapTimerInfoContainerStyle, 0);
@@ -106,7 +96,7 @@ void SectorTimesLayout::updateSectorTimes(void *param) {
         data->sector2.widget->update(data->sector2.data);
         data->sector3.widget->update(data->sector3.data);
 
-        updateGpsInfoWidget(data->gpsInfo);
+        data->gpsInfo.widget->update(data->gpsInfo.data);
 
         updateLapTimerInfoWidget(data->lapTimerInfo);
     }
@@ -123,54 +113,13 @@ void SectorTimesLayout::update(const SectorTimeLayoutUpdateData &updateData) con
         {sectorWidget2, updateData.sector2},
         {sectorWidget3, updateData.sector3},
 
-        {gpsInfoWidget, updateData.gpsInfo},
+        {gpsInfoPanel, updateData.gpsInfo},
         {lapTimerInfoWidget, updateData.lapTimerInfo}
     };
 
     lv_async_call(updateSectorTimes, data);
 
     spdlog::trace("Display.updateSectorTimes -- Update scheduled");
-}
-
-GpsInfoWidget SectorTimesLayout::createGpsInfoWidget(lv_obj_t *parent) const {
-    lv_obj_t *flexContainer = lv_obj_create(parent);
-    lv_obj_add_style(flexContainer, &gpsInfoContainerStyle, LV_PART_MAIN);
-    lv_obj_set_size(flexContainer, lv_pct(100), LV_SIZE_CONTENT);
-    lv_obj_set_flex_flow(flexContainer, LV_FLEX_FLOW_COLUMN);
-    lv_obj_set_scrollbar_mode(flexContainer, LV_SCROLLBAR_MODE_OFF);
-    lv_obj_set_style_bg_color(flexContainer, colorSlowerThanPrevious, LV_PART_MAIN);
-
-    lv_obj_t *satStatsLabel = lv_label_create(flexContainer);
-    lv_obj_set_size(satStatsLabel, lv_pct(100), LV_SIZE_CONTENT);
-    lv_obj_add_style(satStatsLabel, &gpsInfoTextStyle, LV_PART_MAIN);
-    lv_label_set_text(satStatsLabel, "GP: ");
-
-    lv_obj_t *fixInfoLabel = lv_label_create(flexContainer);
-    lv_obj_set_size(fixInfoLabel, lv_pct(100), LV_SIZE_CONTENT);
-    lv_obj_add_style(fixInfoLabel, &gpsInfoTextStyle, LV_PART_MAIN);
-    lv_label_set_text(fixInfoLabel, "Fix: ");
-
-    lv_obj_t *timeLabel = lv_label_create(flexContainer);
-    lv_obj_set_size(timeLabel, lv_pct(100), LV_SIZE_CONTENT);
-    lv_obj_add_style(timeLabel, &gpsInfoTextStyle, LV_PART_MAIN);
-    lv_label_set_text(timeLabel, "Time: ");
-
-    lv_obj_t *latLabel = lv_label_create(flexContainer);
-    lv_obj_set_size(latLabel, lv_pct(100), LV_SIZE_CONTENT);
-    lv_obj_add_style(latLabel, &gpsInfoTextStyle, LV_PART_MAIN);
-    lv_label_set_text(latLabel, "Lat: ");
-
-    lv_obj_t *lonLabel = lv_label_create(flexContainer);
-    lv_obj_set_size(lonLabel, lv_pct(100), LV_SIZE_CONTENT);
-    lv_obj_add_style(lonLabel, &gpsInfoTextStyle, LV_PART_MAIN);
-    lv_label_set_text(lonLabel, "Lon: ");
-
-    lv_obj_t *speedLabel = lv_label_create(flexContainer);
-    lv_obj_set_size(speedLabel, lv_pct(100), LV_SIZE_CONTENT);
-    lv_obj_add_style(speedLabel, &gpsInfoTextStyle, LV_PART_MAIN);
-    lv_label_set_text(speedLabel, "Speed: ");
-
-    return GpsInfoWidget{flexContainer, latLabel, lonLabel, speedLabel, fixInfoLabel, timeLabel, satStatsLabel};
 }
 
 LapTimerInfoWidget SectorTimesLayout::createLapTimerInfoWidget(lv_obj_t *parent) const {
@@ -192,55 +141,6 @@ LapTimerInfoWidget SectorTimesLayout::createLapTimerInfoWidget(lv_obj_t *parent)
     lv_label_set_text(distanceLabel, "Distance: ");
 
     return LapTimerInfoWidget{flexContainer, distanceLabel, lapCounterLabel};
-}
-
-void SectorTimesLayout::updateGpsInfoWidget(GpsInfoWidgetData &gpsInfoWidgetData) {
-    spdlog::trace("Display.updateGpsInfoWidget -- Started");
-
-    std::ostringstream oss;
-
-    oss << "Fix: " << (gpsInfoWidgetData.data.hasFix ? 1 : 0) << "  "
-            << "Sat: " << std::setw(2) << std::setfill(' ') << gpsInfoWidgetData.data.numberOfSatellites << "  "
-            << "Hdop: " << std::fixed << std::setprecision(2) << gpsInfoWidgetData.data.hdop;
-    lv_label_set_text(gpsInfoWidgetData.widget.fixInfoLabel, oss.str().c_str());
-
-    oss.str("");
-    oss.clear();
-    oss << "P:" << std::setw(2) << std::setfill(' ') << gpsInfoWidgetData.data.gpsSats << " "
-            << "L:" << std::setw(2) << std::setfill(' ') << gpsInfoWidgetData.data.glonassSats << " "
-            << "A:" << std::setw(2) << std::setfill(' ') << gpsInfoWidgetData.data.galileoSats << " "
-            << "B:" << std::setw(2) << std::setfill(' ') << gpsInfoWidgetData.data.beidouSats << " "
-            << "Q:" << std::setw(2) << std::setfill(' ') << gpsInfoWidgetData.data.qzssSats;
-    lv_label_set_text(gpsInfoWidgetData.widget.satStatsLabel, oss.str().c_str());
-
-    oss.str("");
-    oss.clear();
-    oss << "Time:"
-            // << " " << std::setw(2) << std::setfill('0') << gpsInfoWidgetData.data.day
-            // << "." << std::setw(2) << std::setfill('0') << gpsInfoWidgetData.data.month
-            // << "." << std::setw(4) << std::setfill('0') << gpsInfoWidgetData.data.year
-            << " " << std::setw(2) << std::setfill('0') << gpsInfoWidgetData.data.hours
-            << ":" << std::setw(2) << std::setfill('0') << gpsInfoWidgetData.data.minutes
-            << ":" << std::setw(2) << std::setfill('0') << gpsInfoWidgetData.data.seconds
-            << "." << std::setw(3) << std::setfill('0') << gpsInfoWidgetData.data.microseconds;
-    lv_label_set_text(gpsInfoWidgetData.widget.timeLabel, oss.str().c_str());
-
-    oss.str("");
-    oss.clear();
-    oss << "Lat: " << std::fixed << std::setprecision(6) << gpsInfoWidgetData.data.latitude;
-    lv_label_set_text(gpsInfoWidgetData.widget.latLabel, oss.str().c_str());
-
-    oss.str("");
-    oss.clear();
-    oss << "Lon: " << std::fixed << std::setprecision(6) << gpsInfoWidgetData.data.longitude;
-    lv_label_set_text(gpsInfoWidgetData.widget.lonLabel, oss.str().c_str());
-
-    oss.str("");
-    oss.clear();
-    oss << "Speed: " << std::fixed << std::setprecision(2) << gpsInfoWidgetData.data.speed;
-    lv_label_set_text(gpsInfoWidgetData.widget.speedLabel, oss.str().c_str());
-
-    spdlog::trace("Display.updateGpsInfoWidget -- Finished");
 }
 
 void SectorTimesLayout::updateLapTimerInfoWidget(LapTimerInfoWidgetData &lapTimerInfoWidgetData) {

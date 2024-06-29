@@ -5,10 +5,16 @@
 
 #include "../Display.h"
 #include "LayoutModels.h"
+#include "panels/gps/GpsPositionExtendedInfoPanel.h"
 
 struct SectorTimeColoredWidgetUpdateData {
-    SectorTimeColoredWidget *widget;
+    SectorTimeColoredWidget *widget{};
     SectorTimeUpdateData data;
+};
+
+struct GpsPositionExtendedInfoPanelUpdateData{
+    GpsPositionExtendedInfoPanel *widget{};
+    GpsState data;
 };
 
 struct SectorTimeLayoutUpdateInternalData {
@@ -16,7 +22,7 @@ struct SectorTimeLayoutUpdateInternalData {
     SectorTimeColoredWidgetUpdateData sector2{};
     SectorTimeColoredWidgetUpdateData sector3{};
 
-    GpsInfoWidgetData gpsInfo;
+    GpsPositionExtendedInfoPanelUpdateData gpsInfo{};
     LapTimerInfoWidgetData lapTimerInfo{};
 };
 
@@ -29,13 +35,11 @@ class SectorTimesLayout {
     SectorTimeColoredWidget *sectorWidget2;
     SectorTimeColoredWidget *sectorWidget3;
 
-    GpsInfoWidget gpsInfoWidget;
+    GpsPositionExtendedInfoPanel *gpsInfoPanel;
 
     LapTimerInfoWidget lapTimerInfoWidget;
 
     lv_style_t mainContainerStyle;
-    lv_style_t gpsInfoContainerStyle;
-    lv_style_t gpsInfoTextStyle;
     lv_style_t lapTimerInfoContainerStyle;
     lv_style_t lapTimerInfoTextStyle;
     lv_style_t sectorTimesContainerStyle;
@@ -50,13 +54,9 @@ public:
 
     void update(const SectorTimeLayoutUpdateData &updateData) const;
 
-    GpsInfoWidget createGpsInfoWidget(lv_obj_t *parent) const;
-
     LapTimerInfoWidget createLapTimerInfoWidget(lv_obj_t *parent) const;
 
     static void updateSectorTimes(void *param);
-
-    static void updateGpsInfoWidget(GpsInfoWidgetData &gpsInfoWidgetData);
 
     static void updateLapTimerInfoWidget(LapTimerInfoWidgetData &lapTimerInfoWidgetData);
 };
