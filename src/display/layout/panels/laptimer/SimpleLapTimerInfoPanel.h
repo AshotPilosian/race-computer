@@ -17,8 +17,8 @@ struct SimpleLapTimerInfoPanelInternal {
 class SimpleLapTimerInfoPanel {
     lv_obj_t *parent;
 
-    lv_style_t containerStyle;
-    lv_style_t textStyle;
+    lv_style_t containerStyle{};
+    lv_style_t textStyle{};
     SimpleLapTimerInfoPanelInternal widget{};
 
     void initStyles();

@@ -22,7 +22,7 @@ class ColoredSectorTimesPanel {
     lv_obj_t *parent;
     int32_t height;
 
-    lv_style_t containerStyle;
+    lv_style_t containerStyle{};
     ColoredSectorTimesPanelInternal widget{};
 
     void initStyles();
