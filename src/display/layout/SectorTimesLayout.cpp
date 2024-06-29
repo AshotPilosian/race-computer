@@ -3,31 +3,19 @@
 #include <iomanip>
 #include <sstream>
 
+#include "Colors.h"
 #include "spdlog/spdlog.h"
 
-lv_color_t SectorTimesLayout::toColor(const SectorState sectorState) {
-    switch (sectorState) {
-        case NOT_STARTED:
-            return colorGrey;
-            break;
-        case IN_PROGRESS:
-            return colorLightGrey;
-            break;
-        case SLOWER_THEN_PREVIOUS_LAP:
-            return colorSlowerThanPrevious;
-            break;
-        case FASTER_THEN_PREVIOUS_LAP:
-            return colorFasterThanPrevious;
-            break;
-        case BEST:
-            return colorFastestOverall;
-            break;
-        default:
-            throw std::invalid_argument("Unsupported sector type.");
-    }
+SectorTimesLayout::SectorTimesLayout(Display *_display): display(_display),
+                                                         sectorWidget1(nullptr),
+                                                         sectorWidget2(nullptr),
+                                                         sectorWidget3(nullptr) {
 }
 
-SectorTimesLayout::SectorTimesLayout(Display *_display): display(_display) {
+SectorTimesLayout::~SectorTimesLayout() {
+    delete sectorWidget1;
+    delete sectorWidget2;
+    delete sectorWidget3;
 }
 
 void SectorTimesLayout::setup() {
@@ -41,19 +29,27 @@ void SectorTimesLayout::setup() {
 
     initStyles();
 
-    mainContainer = lv_obj_create(lv_screen_active()); /*Create a parent object on the current screen*/
+    mainContainer = lv_obj_create(lv_screen_active());
     lv_obj_add_style(mainContainer, &mainContainerStyle, LV_PART_MAIN);
-    lv_obj_set_size(mainContainer, lv_pct(100), lv_pct(100)); /*Set the size of the parent*/
+    lv_obj_set_size(mainContainer, lv_pct(100), lv_pct(100));
     lv_obj_set_style_bg_color(mainContainer, lv_color_hex(0xffffff), LV_PART_MAIN);
     lv_obj_set_scrollbar_mode(mainContainer, LV_SCROLLBAR_MODE_OFF);
+    lv_obj_set_flex_flow(mainContainer, LV_FLEX_FLOW_COLUMN);
 
-    sectorWidget1 = createSectorTimeWidget(mainContainer, lv_pct(33) + 1, -1);
-    sectorWidget2 = createSectorTimeWidget(mainContainer, lv_pct(35), lv_pct(33));
-    sectorWidget3 = createSectorTimeWidget(mainContainer, lv_pct(34), lv_pct(33 + 34));
+    lv_obj_t *sectorTimesContainer = lv_obj_create(mainContainer);
+    lv_obj_add_style(sectorTimesContainer, &sectorTimesContainerStyle, LV_PART_MAIN);
+    lv_obj_set_size(sectorTimesContainer, lv_pct(100), lv_pct(15));
+    lv_obj_set_pos(sectorTimesContainer, 0, 0);
+    lv_obj_set_flex_flow(sectorTimesContainer, LV_FLEX_FLOW_ROW);
+    lv_obj_set_scrollbar_mode(sectorTimesContainer, LV_SCROLLBAR_MODE_OFF);
 
-    gpsInfoWidget = createGpsInfoWidget(mainContainer, lv_pct(20));
+    sectorWidget1 = new SectorTimeColoredWidget(sectorTimesContainer, lv_pct(33));
+    sectorWidget2 = new SectorTimeColoredWidget(sectorTimesContainer, lv_pct(35));
+    sectorWidget3 = new SectorTimeColoredWidget(sectorTimesContainer, lv_pct(33));
 
-    lapTimerInfoWidget = createLapTimerInfoWidget(mainContainer, lv_pct(20 + 50));
+    gpsInfoWidget = createGpsInfoWidget(mainContainer);
+
+    lapTimerInfoWidget = createLapTimerInfoWidget(mainContainer);
 
     std::this_thread::sleep_for(std::chrono::seconds(1));
 
@@ -62,26 +58,26 @@ void SectorTimesLayout::setup() {
 
 void SectorTimesLayout::initStyles() {
     LV_FONT_DECLARE(martian_mono_16);
-    LV_FONT_DECLARE(martian_mono_20);
 
     lv_style_init(&mainContainerStyle);
     lv_style_set_border_width(&mainContainerStyle, 0);
     lv_style_set_radius(&mainContainerStyle, 0);
     lv_style_set_pad_all(&mainContainerStyle, 0);
+    lv_style_set_pad_column(&mainContainerStyle, 0);
+    lv_style_set_pad_row(&mainContainerStyle, 0);
 
-    lv_style_init(&sectorTimeTextStyle);
-    lv_style_set_text_font(&sectorTimeTextStyle, &martian_mono_20);
-
-    lv_style_init(&sectorTimeContainerStyle);
-    lv_style_set_radius(&sectorTimeContainerStyle, 0);
-    lv_style_set_pad_all(&sectorTimeContainerStyle, 0);
-    lv_style_set_border_side(&sectorTimeContainerStyle, LV_BORDER_SIDE_BOTTOM | LV_BORDER_SIDE_LEFT);
-    lv_style_set_border_width(&sectorTimeContainerStyle, 1);
+    lv_style_init(&sectorTimesContainerStyle);
+    lv_style_set_radius(&sectorTimesContainerStyle, 0);
+    lv_style_set_pad_all(&sectorTimesContainerStyle, 0);
+    lv_style_set_pad_column(&sectorTimesContainerStyle, 0);
+    lv_style_set_pad_row(&sectorTimesContainerStyle, 0);
+    lv_style_set_border_side(&sectorTimesContainerStyle, LV_BORDER_SIDE_BOTTOM);
+    lv_style_set_border_width(&sectorTimesContainerStyle, 1);
 
     lv_style_init(&gpsInfoContainerStyle);
     lv_style_set_radius(&gpsInfoContainerStyle, 0);
     lv_style_set_pad_all(&gpsInfoContainerStyle, 0);
-    lv_style_set_pad_top(&gpsInfoContainerStyle, 3);
+    lv_style_set_pad_top(&gpsInfoContainerStyle, 2);
     lv_style_set_pad_row(&gpsInfoContainerStyle, 0);
     lv_style_set_pad_column(&gpsInfoContainerStyle, 0);
     lv_style_set_border_side(&gpsInfoContainerStyle, LV_BORDER_SIDE_BOTTOM);
@@ -93,7 +89,7 @@ void SectorTimesLayout::initStyles() {
     lv_style_init(&lapTimerInfoContainerStyle);
     lv_style_set_radius(&lapTimerInfoContainerStyle, 0);
     lv_style_set_pad_all(&lapTimerInfoContainerStyle, 0);
-    lv_style_set_pad_top(&lapTimerInfoContainerStyle, 3);
+    lv_style_set_pad_top(&lapTimerInfoContainerStyle, 2);
     lv_style_set_pad_row(&lapTimerInfoContainerStyle, 0);
     lv_style_set_pad_column(&lapTimerInfoContainerStyle, 0);
     lv_style_set_border_side(&lapTimerInfoContainerStyle, LV_BORDER_SIDE_BOTTOM);
@@ -106,9 +102,9 @@ void SectorTimesLayout::initStyles() {
 void SectorTimesLayout::updateSectorTimes(void *param) {
     auto *data = static_cast<SectorTimeLayoutUpdateInternalData *>(param);
     if (data) {
-        updateSectorTimeWidget(data->sector1);
-        updateSectorTimeWidget(data->sector2);
-        updateSectorTimeWidget(data->sector3);
+        data->sector1.widget->update(data->sector1.data);
+        data->sector2.widget->update(data->sector2.data);
+        data->sector3.widget->update(data->sector3.data);
 
         updateGpsInfoWidget(data->gpsInfo);
 
@@ -123,12 +119,12 @@ void SectorTimesLayout::update(const SectorTimeLayoutUpdateData &updateData) con
 
     // Allocate the data on the heap to ensure it remains valid for async call
     auto *data = new SectorTimeLayoutUpdateInternalData{
-        {sectorWidget1, toColor(updateData.sector1.state), updateData.sector1.time},
-        {sectorWidget2, toColor(updateData.sector2.state), updateData.sector2.time},
-        {sectorWidget3, toColor(updateData.sector3.state), updateData.sector3.time},
+        {sectorWidget1, updateData.sector1},
+        {sectorWidget2, updateData.sector2},
+        {sectorWidget3, updateData.sector3},
+
         {gpsInfoWidget, updateData.gpsInfo},
         {lapTimerInfoWidget, updateData.lapTimerInfo}
-
     };
 
     lv_async_call(updateSectorTimes, data);
@@ -136,30 +132,13 @@ void SectorTimesLayout::update(const SectorTimeLayoutUpdateData &updateData) con
     spdlog::trace("Display.updateSectorTimes -- Update scheduled");
 }
 
-SectorTimeWidget SectorTimesLayout::createSectorTimeWidget(lv_obj_t *parent, const int32_t width,
-                                                           const int32_t offsetX) const {
-    lv_obj_t *container = lv_obj_create(parent);
-    lv_obj_add_style(container, &sectorTimeContainerStyle, LV_PART_MAIN);
-    lv_obj_set_scrollbar_mode(container, LV_SCROLLBAR_MODE_OFF);
-    lv_obj_set_size(container, width, lv_pct(20));
-    lv_obj_set_pos(container, offsetX, 0);
-    lv_obj_set_style_bg_color(container, colorGrey, LV_PART_MAIN);
-
-    lv_obj_t *label = lv_label_create(container);
-    lv_obj_align(label, LV_ALIGN_CENTER, 0, 0);
-    lv_obj_add_style(label, &sectorTimeTextStyle, LV_PART_MAIN);
-    lv_label_set_text(label, "");
-
-    return SectorTimeWidget{container, label};
-}
-
-GpsInfoWidget SectorTimesLayout::createGpsInfoWidget(lv_obj_t *parent, const int32_t offsetY) const {
+GpsInfoWidget SectorTimesLayout::createGpsInfoWidget(lv_obj_t *parent) const {
     lv_obj_t *flexContainer = lv_obj_create(parent);
     lv_obj_add_style(flexContainer, &gpsInfoContainerStyle, LV_PART_MAIN);
-    lv_obj_set_size(flexContainer, lv_pct(100), lv_pct(50));
-    lv_obj_set_pos(flexContainer, 0, offsetY);
+    lv_obj_set_size(flexContainer, lv_pct(100), LV_SIZE_CONTENT);
     lv_obj_set_flex_flow(flexContainer, LV_FLEX_FLOW_COLUMN);
     lv_obj_set_scrollbar_mode(flexContainer, LV_SCROLLBAR_MODE_OFF);
+    lv_obj_set_style_bg_color(flexContainer, colorSlowerThanPrevious, LV_PART_MAIN);
 
     lv_obj_t *satStatsLabel = lv_label_create(flexContainer);
     lv_obj_set_size(satStatsLabel, lv_pct(100), LV_SIZE_CONTENT);
@@ -194,13 +173,13 @@ GpsInfoWidget SectorTimesLayout::createGpsInfoWidget(lv_obj_t *parent, const int
     return GpsInfoWidget{flexContainer, latLabel, lonLabel, speedLabel, fixInfoLabel, timeLabel, satStatsLabel};
 }
 
-LapTimerInfoWidget SectorTimesLayout::createLapTimerInfoWidget(lv_obj_t *parent, const int32_t offsetY) const {
+LapTimerInfoWidget SectorTimesLayout::createLapTimerInfoWidget(lv_obj_t *parent) const {
     lv_obj_t *flexContainer = lv_obj_create(parent);
     lv_obj_add_style(flexContainer, &lapTimerInfoContainerStyle, LV_PART_MAIN);
-    lv_obj_set_size(flexContainer, lv_pct(100), lv_pct(30));
-    lv_obj_set_pos(flexContainer, 0, offsetY);
+    lv_obj_set_size(flexContainer, lv_pct(100), LV_SIZE_CONTENT);
     lv_obj_set_flex_flow(flexContainer, LV_FLEX_FLOW_COLUMN);
     lv_obj_set_scrollbar_mode(flexContainer, LV_SCROLLBAR_MODE_OFF);
+    lv_obj_set_style_bg_color(flexContainer, colorFasterThanPrevious, LV_PART_MAIN);
 
     lv_obj_t *lapCounterLabel = lv_label_create(flexContainer);
     lv_obj_set_size(lapCounterLabel, lv_pct(100), LV_SIZE_CONTENT);
@@ -213,18 +192,6 @@ LapTimerInfoWidget SectorTimesLayout::createLapTimerInfoWidget(lv_obj_t *parent,
     lv_label_set_text(distanceLabel, "Distance: ");
 
     return LapTimerInfoWidget{flexContainer, distanceLabel, lapCounterLabel};
-}
-
-void SectorTimesLayout::updateSectorTimeWidget(SectorTimeWidgetData &sectorTimeWidgetData) {
-    spdlog::trace("Display.updateSectorTimeWidget -- Started");
-
-    lv_obj_set_style_bg_color(sectorTimeWidgetData.widget.container, sectorTimeWidgetData.color, LV_PART_MAIN);
-    spdlog::trace("Display.updateSectorTimeWidget -- Set color");
-
-    lv_label_set_text(sectorTimeWidgetData.widget.label, sectorTimeWidgetData.text.data());
-    spdlog::trace("Display.updateSectorTimeWidget -- Set text: {}", sectorTimeWidgetData.text);
-
-    spdlog::trace("Display.updateSectorTimeWidget -- Finished");
 }
 
 void SectorTimesLayout::updateGpsInfoWidget(GpsInfoWidgetData &gpsInfoWidgetData) {

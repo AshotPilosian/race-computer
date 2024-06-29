@@ -6,32 +6,43 @@
 #include "../Display.h"
 #include "LayoutModels.h"
 
+struct SectorTimeColoredWidgetUpdateData {
+    SectorTimeColoredWidget *widget;
+    SectorTimeUpdateData data;
+};
+
+struct SectorTimeLayoutUpdateInternalData {
+    SectorTimeColoredWidgetUpdateData sector1{};
+    SectorTimeColoredWidgetUpdateData sector2{};
+    SectorTimeColoredWidgetUpdateData sector3{};
+
+    GpsInfoWidgetData gpsInfo;
+    LapTimerInfoWidgetData lapTimerInfo{};
+};
 
 class SectorTimesLayout {
     Display *display;
 
     lv_obj_t *mainContainer;
 
-    SectorTimeWidget sectorWidget1;
-    SectorTimeWidget sectorWidget2;
-    SectorTimeWidget sectorWidget3;
+    SectorTimeColoredWidget *sectorWidget1;
+    SectorTimeColoredWidget *sectorWidget2;
+    SectorTimeColoredWidget *sectorWidget3;
 
     GpsInfoWidget gpsInfoWidget;
 
     LapTimerInfoWidget lapTimerInfoWidget;
 
-    lv_style_t sectorTimeTextStyle;
-    lv_style_t sectorTimeContainerStyle;
     lv_style_t mainContainerStyle;
     lv_style_t gpsInfoContainerStyle;
     lv_style_t gpsInfoTextStyle;
     lv_style_t lapTimerInfoContainerStyle;
     lv_style_t lapTimerInfoTextStyle;
-
-    static lv_color_t toColor(SectorState sectorState);
+    lv_style_t sectorTimesContainerStyle;
 
 public:
     explicit SectorTimesLayout(Display *_display);
+    ~SectorTimesLayout();
 
     void setup();
 
@@ -39,15 +50,11 @@ public:
 
     void update(const SectorTimeLayoutUpdateData &updateData) const;
 
-    SectorTimeWidget createSectorTimeWidget(lv_obj_t *parent, int32_t width, int32_t offsetX) const;
+    GpsInfoWidget createGpsInfoWidget(lv_obj_t *parent) const;
 
-    GpsInfoWidget createGpsInfoWidget(lv_obj_t *parent, int32_t offsetY) const;
-
-    LapTimerInfoWidget createLapTimerInfoWidget(lv_obj_t *parent, int32_t offsetY) const;
+    LapTimerInfoWidget createLapTimerInfoWidget(lv_obj_t *parent) const;
 
     static void updateSectorTimes(void *param);
-
-    static void updateSectorTimeWidget(SectorTimeWidgetData &sectorTimeWidgetData);
 
     static void updateGpsInfoWidget(GpsInfoWidgetData &gpsInfoWidgetData);
 

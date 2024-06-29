@@ -115,7 +115,7 @@ long long getCurrentTimeMs() {
 }
 
 void updateDisplayIfNeeded() {
-    if (long long currentTimeMs = getCurrentTimeMs();
+    if (const long long currentTimeMs = getCurrentTimeMs();
         currentTimeMs - displayUpdatedAtMs > displayUpdateIntervalMs) {
         spdlog::trace("Updating info on display");
 
