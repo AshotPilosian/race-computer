@@ -12,13 +12,15 @@
 #include "GPS.h"
 #include "UbxCommands.h"
 
-GPS::GPS(): nmeaBufferCurrentIdx(0),
+GPS::GPS(): uartFd(-100),
+            nmeaBuffer{},
+            nmeaBufferCurrentIdx(0),
             nmeaBufferStartValid(false),
             currentState({}) {
 }
 
-void GPS::writeCommandToModule(const std::span<const unsigned char> command) const {
-    for (unsigned char ch: command) {
+void GPS::writeCommandToModule(const std::span<const unsigned char> commandBytes) const {
+    for (unsigned char ch: commandBytes) {
         spdlog::trace("Writing command char: {}", ch);
         wiringXSerialPutChar(uartFd, ch);
     }
@@ -275,7 +277,7 @@ std::optional<GpsUpdateList> GPS::getUnprocessedUpdates() {
         unprocessedUpdates = std::nullopt;
 
         return updates;
-    } else {
-        return std::nullopt;
     }
+
+    return std::nullopt;
 }
