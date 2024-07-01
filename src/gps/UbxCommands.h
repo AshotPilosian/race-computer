@@ -1,20 +1,183 @@
-//
-// Created by Ashot on 6/20/2024.
-//
-
 #ifndef RACE_COMPUTER_UBXCOMMANDS_H
 #define RACE_COMPUTER_UBXCOMMANDS_H
 
-static unsigned char UBX_CFG_UART_BAUD_115200[] = {
-        0xB5, 0x62,  // UBX header
-        0x06, 0x8A,  // Message class and ID for CFG-VALSET
-        0x0C, 0x00,  // Payload length (19 bytes)
-        0x01,        // Version
-        0x01,        // Layer 0 - RAM, 1 - BBR, 2 - Flash
-        0x00, 0x00,  // Reserved
-        0x01, 0x00, 0x52, 0x40,
-        0x00, 0xC2, 0x01, 0x00,
-        0xF4, 0xB1
+// CFG-UART1-BAUDRATE = 115200
+static unsigned char UBX_CFG_UART1_BAUDRATE_115200[] = {
+    0xB5, 0x62, // UBX header
+    0x06, 0x8A, // Message class and ID for CFG-VALSET
+    0x0C, 0x00, // Payload length (19 bytes)
+    0x01, // Version
+    0x01, // Layer 0 - RAM, 1 - BBR, 2 - Flash
+    0x00, 0x00, // Reserved
+    0x01, 0x00, 0x52, 0x40,
+    0x00, 0xC2, 0x01, 0x00,
+    0xF4, 0xB1
+};
+
+// CFG-UART1-BAUDRATE = 460800
+// B5 62 06 8A 0C 00 01 01 00 00 01 00 52 40 00 08 07 00 40 8F
+static unsigned char UBX_CFG_UART1_BAUDRATE_460800[] = {
+    0xB5, 0x62,
+    0x06, 0x8A,
+    0x0C, 0x00,
+    0x01, 0x01, 0x00, 0x00,
+    0x01, 0x00, 0x52, 0x40, 0x00, 0x08, 0x07, 0x00,
+    0x40, 0x8F
+};
+
+// CFG-UART1OUTPROT-UBX = False
+// B5 62 06 8A 09 00 01 01 00 00 01 00 74 10 00 20 BB
+static unsigned char UBX_CFG_UART1OUTPROT_UBX_FALSE[] = {
+    0xB5, 0x62,
+    0x06, 0x8A,
+    0x09, 0x00,
+    0x01, 0x01, 0x00, 0x00,
+    0x01, 0x00, 0x74, 0x10, 0x00,
+    0x20, 0xBB
+};
+
+// B5 62 06 8A 09 00 01 01 00 00 24 00 31 10 00 00 A1
+static unsigned char UBX_CFG_SIGNAL_QZSS_ENA_FALSE[] = {
+    0xB5, 0x62, // UBX header
+    0x06, 0x8A, // Message class and ID for CFG-VALSET
+    0x09, 0x00, // Payload length (19 bytes)
+    0x01, // Version
+    0x01, // Layer 0 - RAM, 1 - BBR, 2 - Flash
+    0x00, 0x00, // Reserved
+    0x24, 0x00, 0x31, 0x10,
+    0x00,
+    0x00, 0xA1
+};
+
+// B5 62 06 8A 09 00 01 01 00 00 25 00 31 10 01 02 A7
+static unsigned char UBX_CFG_SIGNAL_GLO_ENA_TRUE[] = {
+    0xB5, 0x62, // UBX header
+    0x06, 0x8A, // Message class and ID for CFG-VALSET
+    0x09, 0x00, // Payload length (19 bytes)
+    0x01, // Version
+    0x01, // Layer 0 - RAM, 1 - BBR, 2 - Flash
+    0x00, 0x00, // Reserved
+    0x25, 0x00, 0x31, 0x10,
+    0x01,
+    0x02, 0xA7
+};
+
+// B5 62 06 8A 09 00 01 01 00 00 18 00 31 10 01 F5 66
+static unsigned char UBX_CFG_SIGNAL_GLO_L1_ENA_TRUE[] = {
+    0xB5, 0x62, // UBX header
+    0x06, 0x8A, // Message class and ID for CFG-VALSET
+    0x09, 0x00, // Payload length (19 bytes)
+    0x01, // Version
+    0x01, // Layer 0 - RAM, 1 - BBR, 2 - Flash
+    0x00, 0x00, // Reserved
+    0x18, 0x00, 0x31, 0x10,
+    0x01,
+    0xF5, 0x66
+};
+
+// B5 62 06 8A 09 00 01 01 00 00 21 00 11 20 04 F1 56
+static unsigned char UBX_CFG_NAVSPG_DYNMODEL_AUTOMOTIVE[] = {
+    0xB5, 0x62, // UBX header
+    0x06, 0x8A, // Message class and ID for CFG-VALSET
+    0x09, 0x00, // Payload length (19 bytes)
+    0x01, // Version
+    0x01, // Layer 0 - RAM, 1 - BBR, 2 - Flash
+    0x00, 0x00, // Reserved
+    0x21, 0x00, 0x11, 0x20,
+    0x04,
+    0xF1, 0x56
+};
+
+// B5 62 06 8A 09 00 01 01 00 00 05 00 22 20 03 E5 FC
+static unsigned char UBX_CFG_ODO_PROFILE_CAR[] = {
+    0xB5, 0x62, // UBX header
+    0x06, 0x8A, // Message class and ID for CFG-VALSET
+    0x09, 0x00, // Payload length (19 bytes)
+    0x01, // Version
+    0x01, // Layer 0 - RAM, 1 - BBR, 2 - Flash
+    0x00, 0x00, // Reserved
+    0x05, 0x00, 0x22, 0x20,
+    0x03,
+    0xE5, 0xFC
+};
+
+// CFG-RATE-MEAS = 10Hz
+// B5 62 06 8A 0A 00 01 01 00 00 01 00 21 30 64 00 52 C3
+static unsigned char UBX_CFG_RATE_MEAS_10HZ[] = {
+    0xB5, 0x62, // UBX header
+    0x06, 0x8A, // Message class and ID for CFG-VALSET
+    0x0A, 0x00, // Payload length (19 bytes)
+    0x01, // Version
+    0x01, // Layer 0 - RAM, 1 - BBR, 2 - Flash
+    0x00, 0x00, // Reserved
+    0x01, 0x00, 0x21, 0x30,
+    0x64, 0x00,
+    0x52, 0xC3
+};
+
+// CFG-RATE-MEAS = 25Hz
+// B5 62 06 8A 0A 00 01 01 00 00 01 00 21 30 28 00 16 4B
+static unsigned char UBX_CFG_RATE_MEAS_25HZ[] = {
+    0xB5, 0x62,
+    0x06, 0x8A,
+    0x0A, 0x00,
+    0x01, 0x01, 0x00, 0x00,
+    0x01, 0x00, 0x21, 0x30, 0x28, 0x00,
+    0x16, 0x4B
+};
+
+// CFG-HW-RF_LNA_MODE = LOWGAIN
+// B5 62 06 8A 09 00 01 01 00 00 57 00 A3 20 01 B6 17
+static unsigned char UBX_CFG_HW_RF_LNA_MODE_LOWGAIN[] = {
+    0xB5, 0x62,
+    0x06, 0x8A,
+    0x09, 0x00,
+    0x01, 0x01, 0x00, 0x00,
+    0x57, 0x00, 0xA3, 0x20, 0x01,
+    0xB6, 0x17
+};
+
+// CFG-HW-RF_LNA_MODE = NORMAL
+// B5 62 06 8A 09 00 01 01 00 00 57 00 A3 20 00 B5 16
+static unsigned char UBX_CFG_HW_RF_LNA_MODE_NORMAL[] = {
+    0xB5, 0x62,
+    0x06, 0x8A,
+    0x09, 0x00,
+    0x01, 0x01, 0x00, 0x00,
+    0x57, 0x00, 0xA3, 0x20, 0x00,
+    0xB5, 0x16
+};
+
+// CFG-NMEA-HIGHPREC = True
+// B5 62 06 8A 09 00 01 01 00 00 06 00 93 10 01 45 32
+static unsigned char UBX_CFG_NMEA_HIGHPREC_TRUE[] = {
+    0xB5, 0x62,
+    0x06, 0x8A,
+    0x09, 0x00,
+    0x01, 0x01, 0x00, 0x00,
+    0x06, 0x00, 0x93, 0x10, 0x01,
+    0x45, 0x32
+};
+
+// CFG-ODO-USE_ODO = True
+// B5 62 06 8A 09 00 01 01 00 00 01 00 22 10 01 CF C6
+static unsigned char UBX_CFG_ODO_USE_ODO_TRUE[] = {
+    0xB5, 0x62,
+    0x06, 0x8A,
+    0x09, 0x00,
+    0x01, 0x01, 0x00, 0x00,
+    0x01, 0x00, 0x22, 0x10, 0x01,
+    0xCF, 0xC6
+};
+
+// UBX-CFG-RST = HOT
+// B5 62 06 04 04 00 00 00 02 00 10 68
+static unsigned char UBX_CFG_RST_HOT[] = {
+    0xB5, 0x62,
+    0x06, 0x04,
+    0x04, 0x00,
+    0x00, 0x00, 0x02, 0x00,
+    0x10, 0x68
 };
 
 #endif //RACE_COMPUTER_UBXCOMMANDS_H

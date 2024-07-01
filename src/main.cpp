@@ -43,7 +43,7 @@ int init_wiringX() {
         wiringXGC();
         return 1;
     }
-    sleep(1);
+    std::this_thread::sleep_for(std::chrono::seconds(1));
     spdlog::info("wiringX setup completed");
 
     return 0;

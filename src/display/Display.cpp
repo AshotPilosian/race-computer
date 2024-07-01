@@ -72,7 +72,7 @@ void Display::shutdown() {
     spdlog::info("Closing LVGL");
 
     lv_async_call(resetScreenColor, nullptr);
-    sleep(1);
+    std::this_thread::sleep_for(std::chrono::seconds(1));
 
     if (running) {
         running = false;

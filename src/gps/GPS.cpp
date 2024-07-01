@@ -24,6 +24,7 @@ void GPS::writeCommandToModule(const std::span<const unsigned char> commandBytes
         spdlog::trace("Writing command char: {}", ch);
         wiringXSerialPutChar(uartFd, ch);
     }
+    std::this_thread::sleep_for(std::chrono::milliseconds(50));
 }
 
 void GPS::setup() {
@@ -32,15 +33,46 @@ void GPS::setup() {
     spdlog::debug("Opening GPS UART with baud 9600");
     uartFd = openUartToGpsModule(9600);
     spdlog::debug("Configure GPS module to increase baud to 115200");
-    writeCommandToModule(UBX_CFG_UART_BAUD_115200);
+    writeCommandToModule(UBX_CFG_UART1_BAUDRATE_115200);
 
     spdlog::debug("Closing GPS UART to re-open with higher rate");
     wiringXSerialClose(uartFd);
-    sleep(1);
+    std::this_thread::sleep_for(std::chrono::seconds(1));
 
     spdlog::debug("Opening GPS UART with baud 115200");
     uartFd = openUartToGpsModule(115200);
 
+    spdlog::debug("Sending GPS command: SIGNAL_QZSS_ENA = FALSE");
+    writeCommandToModule(UBX_CFG_SIGNAL_QZSS_ENA_FALSE);
+
+    spdlog::debug("Sending GPS command: SIGNAL_GLO_ENA = TRUE");
+    writeCommandToModule(UBX_CFG_SIGNAL_GLO_ENA_TRUE);
+
+    spdlog::debug("Sending GPS command: SIGNAL_GLO_L1_ENA = TRUE");
+    writeCommandToModule(UBX_CFG_SIGNAL_GLO_L1_ENA_TRUE);
+
+    spdlog::debug("Sending GPS command: NAVSPG_DYNMODEL = AUTOMOTIVE");
+    writeCommandToModule(UBX_CFG_NAVSPG_DYNMODEL_AUTOMOTIVE);
+
+    spdlog::debug("Sending GPS command: ODO_PROFILE = CAR");
+    writeCommandToModule(UBX_CFG_ODO_PROFILE_CAR);
+
+    spdlog::debug("Sending GPS command: HW_RF_LNA_MODE = NORMAL");
+    writeCommandToModule(UBX_CFG_HW_RF_LNA_MODE_NORMAL);
+
+    // spdlog::debug("Sending GPS command: NMEA_HIGHPREC = TRUE");
+    // writeCommandToModule(UBX_CFG_NMEA_HIGHPREC_TRUE);
+
+    spdlog::debug("Sending GPS command: ODO_USE_ODO = TRUE");
+    writeCommandToModule(UBX_CFG_ODO_USE_ODO_TRUE);
+
+    // spdlog::debug("Sending GPS command: RST = HOT");
+    // writeCommandToModule(UBX_CFG_RST_HOT);
+
+    // spdlog::debug("Sending GPS command: RATE_MEAS = 10HZ");
+    // writeCommandToModule(UBX_CFG_RATE_MEAS_10HZ);
+
+    std::this_thread::sleep_for(std::chrono::seconds(3));
     spdlog::info("GPS UART setup completed. FD: {}", uartFd);
 }
 
