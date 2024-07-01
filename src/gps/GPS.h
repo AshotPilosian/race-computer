@@ -16,6 +16,26 @@ class GPS {
 
     void writeCommandToModule(std::span<const unsigned char> commandBytes) const;
 
+    void handleValidNmeaSentence(GpsUpdateList &gpsUpdates);
+
+    static void processGGA(const char *buffer, const std::string &nmeaWithoutNewLine,
+                           GpsState &stateToUpdate, GpsUpdateList &gpsUpdates);
+
+    static void processGSV(const char *buffer, const std::string &nmeaWithoutNewLine,
+                           GpsState &stateToUpdate, GpsUpdateList &gpsUpdates);
+
+    static void processRMC(const char *buffer, const std::string &nmeaWithoutNewLine,
+                           GpsState &stateToUpdate, GpsUpdateList &gpsUpdates);
+
+    static void processGLL(const char *buffer, const std::string &nmeaWithoutNewLine,
+                           GpsState &stateToUpdate, GpsUpdateList &gpsUpdates);
+
+    static void processGSA(const char *buffer, const std::string &nmeaWithoutNewLine,
+                           GpsState &stateToUpdate, GpsUpdateList &gpsUpdates);
+
+    static void processVTG(const char *buffer, const std::string &nmeaWithoutNewLine,
+                           GpsState &stateToUpdate, GpsUpdateList &gpsUpdates);
+
     static std::string removeNewLineCharacter(char *arr);
 
     static uint8_t calculateChecksum(const char *sentence);

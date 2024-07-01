@@ -90,146 +90,7 @@ void GPS::readAvailable() {
                 nmeaBuffer[nmeaBufferCurrentIdx] = '\0';
                 if (nmeaBufferStartValid) {
                     if (validateChecksum(nmeaBuffer)) {
-                        auto nmeaWithoutNewLineChar = removeNewLineCharacter(nmeaBuffer);
-                        spdlog::debug("NMEA: {}", nmeaWithoutNewLineChar);
-
-                        switch (minmea_sentence_id(nmeaBuffer, false)) {
-                            case MINMEA_SENTENCE_VTG: {
-                                minmea_sentence_vtg frame{};
-                                if (minmea_parse_vtg(&frame, nmeaBuffer)) {
-                                    currentState.speed = minmea_tofloat(&frame.speed_kph);
-
-                                    updates.emplace_back(SpeedUpdate{
-                                        nmeaWithoutNewLineChar,
-                                        minmea_tofloat(&frame.speed_kph)
-                                    });
-                                } else {
-                                    spdlog::error("Failed to parse VTG sentence: {}", nmeaBuffer);
-                                }
-                            }
-                            break;
-
-                            case MINMEA_SENTENCE_GSA: {
-                                minmea_sentence_gsa frame{};
-                                if (minmea_parse_gsa(&frame, nmeaBuffer)) {
-                                    updates.emplace_back(SatellitesUpdate{
-                                        nmeaWithoutNewLineChar,
-                                        0,
-                                        minmea_tofloat(&frame.hdop)
-                                    });
-                                } else {
-                                    spdlog::error("Failed to parse GSA sentence: {}", nmeaBuffer);
-                                }
-                            }
-                            break;
-
-                            case MINMEA_SENTENCE_GLL: {
-                                minmea_sentence_gll frame{};
-                                if (minmea_parse_gll(&frame, nmeaBuffer)) {
-                                    updates.emplace_back(PositionUpdate{
-                                        nmeaWithoutNewLineChar,
-                                        false,
-                                        minmea_tocoord(&frame.latitude),
-                                        minmea_tocoord(&frame.longitude)
-                                    });
-                                } else {
-                                    spdlog::error("Failed to parse GLL sentence: {}", nmeaBuffer);
-                                }
-                            }
-                            break;
-
-                            case MINMEA_SENTENCE_RMC: {
-                                minmea_sentence_rmc frame{};
-                                if (minmea_parse_rmc(&frame, nmeaBuffer)) {
-                                    currentState.hasFix = frame.valid;
-
-                                    currentState.latitude = minmea_tocoord(&frame.latitude);
-                                    currentState.longitude = minmea_tocoord(&frame.longitude);
-
-                                    currentState.day = frame.date.day;
-                                    currentState.month = frame.date.month;
-                                    currentState.year = frame.date.year;
-
-                                    currentState.hours = frame.time.hours;
-                                    currentState.minutes = frame.time.minutes;
-                                    currentState.seconds = frame.time.seconds;
-                                    currentState.microseconds = frame.time.microseconds;
-
-                                    // This speed is in knots, should be converted at first
-                                    // currentState.speed = minmea_tofloat(&frame.speed);
-
-                                    updates.emplace_back(PositionUpdate{
-                                        nmeaWithoutNewLineChar,
-                                        frame.valid,
-                                        minmea_tocoord(&frame.latitude),
-                                        minmea_tocoord(&frame.longitude)
-                                    });
-                                } else {
-                                    spdlog::error("Failed to parse RMC sentence: {}", nmeaBuffer);
-                                }
-                            }
-                            break;
-
-                            case MINMEA_SENTENCE_GGA: {
-                                minmea_sentence_gga frame{};
-                                if (minmea_parse_gga(&frame, nmeaBuffer)) {
-                                    currentState.hasFix = frame.fix_quality > 0;
-                                    currentState.fixQuality = frame.fix_quality;
-                                    currentState.numberOfSatellites = frame.satellites_tracked;
-                                    currentState.hdop = minmea_tofloat(&frame.hdop);
-
-                                    currentState.latitude = minmea_tocoord(&frame.latitude);
-                                    currentState.longitude = minmea_tocoord(&frame.longitude);
-
-                                    currentState.hours = frame.time.hours;
-                                    currentState.minutes = frame.time.minutes;
-                                    currentState.seconds = frame.time.seconds;
-                                    currentState.microseconds = frame.time.microseconds;
-
-                                    updates.emplace_back(PositionUpdate{
-                                        nmeaWithoutNewLineChar,
-                                        frame.fix_quality > 0,
-                                        minmea_tocoord(&frame.latitude),
-                                        minmea_tocoord(&frame.longitude)
-                                    });
-                                } else {
-                                    spdlog::error("Failed to parse GGA sentence: {}", nmeaBuffer);
-                                }
-                            }
-                            break;
-
-                            case MINMEA_SENTENCE_GSV: {
-                                minmea_sentence_gsv frame{};
-                                if (minmea_parse_gsv(&frame, nmeaBuffer)) {
-                                    if (frame.msg_nr == 1) {
-                                        char gnssType[3];
-                                        strncpy(gnssType, nmeaBuffer + 1, 2);
-                                        gnssType[2] = '\0';
-
-                                        if (auto gnssTypeStr = std::string(gnssType); gnssTypeStr == "GP") {
-                                            currentState.gpsSats = frame.total_sats;
-                                        } else if (gnssTypeStr == "GL") {
-                                            currentState.glonassSats = frame.total_sats;
-                                        } else if (gnssTypeStr == "GA") {
-                                            currentState.galileoSats = frame.total_sats;
-                                        } else if (gnssTypeStr == "GB") {
-                                            currentState.beidouSats = frame.total_sats;
-                                        } else if (gnssTypeStr == "GQ") {
-                                            currentState.qzssSats = frame.total_sats;
-                                        } else {
-                                            spdlog::error("Unknown GNSS type: {}", gnssType);
-                                        }
-                                    }
-                                } else {
-                                    spdlog::error("Failed to parse GSV sentence: {}", nmeaBuffer);
-                                }
-                            }
-                            break;
-
-                            default:
-                                spdlog::error("Unknown sentence: {}", nmeaBuffer);
-                                break;
-                        }
+                        handleValidNmeaSentence(updates);
                     }
                 }
 
@@ -258,6 +119,179 @@ std::optional<GpsUpdateList> GPS::getUnprocessedUpdates() {
 }
 
 // Private
+void GPS::handleValidNmeaSentence(GpsUpdateList &gpsUpdates) {
+    auto nmeaWithoutNewLineChar = removeNewLineCharacter(nmeaBuffer);
+    spdlog::debug("NMEA: {}", nmeaWithoutNewLineChar);
+
+    switch (minmea_sentence_id(nmeaBuffer, false)) {
+        case MINMEA_SENTENCE_VTG:
+            processVTG(nmeaBuffer, nmeaWithoutNewLineChar, currentState, gpsUpdates);
+            break;
+        case MINMEA_SENTENCE_GSA:
+            processGSA(nmeaBuffer, nmeaWithoutNewLineChar, currentState, gpsUpdates);
+            break;
+        case MINMEA_SENTENCE_GLL:
+            processGLL(nmeaBuffer, nmeaWithoutNewLineChar, currentState, gpsUpdates);
+            break;
+        case MINMEA_SENTENCE_RMC:
+            processRMC(nmeaBuffer, nmeaWithoutNewLineChar, currentState, gpsUpdates);
+            break;
+        case MINMEA_SENTENCE_GGA:
+            processGGA(nmeaBuffer, nmeaWithoutNewLineChar, currentState, gpsUpdates);
+            break;
+        case MINMEA_SENTENCE_GSV:
+            processGSV(nmeaBuffer, nmeaWithoutNewLineChar, currentState, gpsUpdates);
+            break;
+        default:
+            spdlog::error("Unknown sentence: {}", nmeaBuffer);
+            break;
+    }
+}
+
+void GPS::processGGA(const char *buffer,
+                     const std::string &nmeaWithoutNewLine,
+                     GpsState &stateToUpdate,
+                     GpsUpdateList &gpsUpdates) {
+    minmea_sentence_gga frame{};
+    if (minmea_parse_gga(&frame, buffer)) {
+        stateToUpdate.hasFix = frame.fix_quality > 0;
+        stateToUpdate.fixQuality = frame.fix_quality;
+        stateToUpdate.numberOfSatellites = frame.satellites_tracked;
+        stateToUpdate.hdop = minmea_tofloat(&frame.hdop);
+
+        stateToUpdate.latitude = minmea_tocoord(&frame.latitude);
+        stateToUpdate.longitude = minmea_tocoord(&frame.longitude);
+
+        stateToUpdate.hours = frame.time.hours;
+        stateToUpdate.minutes = frame.time.minutes;
+        stateToUpdate.seconds = frame.time.seconds;
+        stateToUpdate.microseconds = frame.time.microseconds;
+
+        gpsUpdates.emplace_back(PositionUpdate{
+            nmeaWithoutNewLine,
+            frame.fix_quality > 0,
+            minmea_tocoord(&frame.latitude),
+            minmea_tocoord(&frame.longitude)
+        });
+    } else {
+        spdlog::error("Failed to parse GGA sentence: {}", buffer);
+    }
+}
+
+void GPS::processGSV(const char *buffer,
+                     const std::string &nmeaWithoutNewLine,
+                     GpsState &stateToUpdate,
+                     GpsUpdateList &gpsUpdates) {
+    minmea_sentence_gsv frame{};
+    if (minmea_parse_gsv(&frame, buffer)) {
+        if (frame.msg_nr == 1) {
+            char gnssType[3];
+            strncpy(gnssType, buffer + 1, 2);
+            gnssType[2] = '\0';
+
+            if (const auto gnssTypeStr = std::string(gnssType); gnssTypeStr == "GP") {
+                stateToUpdate.gpsSats = frame.total_sats;
+            } else if (gnssTypeStr == "GL") {
+                stateToUpdate.glonassSats = frame.total_sats;
+            } else if (gnssTypeStr == "GA") {
+                stateToUpdate.galileoSats = frame.total_sats;
+            } else if (gnssTypeStr == "GB") {
+                stateToUpdate.beidouSats = frame.total_sats;
+            } else if (gnssTypeStr == "GQ") {
+                stateToUpdate.qzssSats = frame.total_sats;
+            } else {
+                spdlog::error("Unknown GNSS type: {}", gnssType);
+            }
+        }
+    } else {
+        spdlog::error("Failed to parse GSV sentence: {}", buffer);
+    }
+}
+
+void GPS::processRMC(const char *buffer,
+                     const std::string &nmeaWithoutNewLine,
+                     GpsState &stateToUpdate,
+                     GpsUpdateList &gpsUpdates) {
+    minmea_sentence_rmc frame{};
+    if (minmea_parse_rmc(&frame, buffer)) {
+        stateToUpdate.hasFix = frame.valid;
+
+        stateToUpdate.latitude = minmea_tocoord(&frame.latitude);
+        stateToUpdate.longitude = minmea_tocoord(&frame.longitude);
+
+        stateToUpdate.day = frame.date.day;
+        stateToUpdate.month = frame.date.month;
+        stateToUpdate.year = frame.date.year;
+
+        stateToUpdate.hours = frame.time.hours;
+        stateToUpdate.minutes = frame.time.minutes;
+        stateToUpdate.seconds = frame.time.seconds;
+        stateToUpdate.microseconds = frame.time.microseconds;
+
+        // This speed is in knots, should be converted at first
+        // currentState.speed = minmea_tofloat(&frame.speed);
+
+        gpsUpdates.emplace_back(PositionUpdate{
+            nmeaWithoutNewLine,
+            frame.valid,
+            minmea_tocoord(&frame.latitude),
+            minmea_tocoord(&frame.longitude)
+        });
+    } else {
+        spdlog::error("Failed to parse RMC sentence: {}", buffer);
+    }
+}
+
+void GPS::processGLL(const char *buffer,
+                     const std::string &nmeaWithoutNewLine,
+                     GpsState &stateToUpdate,
+                     GpsUpdateList &gpsUpdates) {
+    minmea_sentence_gll frame{};
+    if (minmea_parse_gll(&frame, buffer)) {
+        gpsUpdates.emplace_back(PositionUpdate{
+            nmeaWithoutNewLine,
+            false,
+            minmea_tocoord(&frame.latitude),
+            minmea_tocoord(&frame.longitude)
+        });
+    } else {
+        spdlog::error("Failed to parse GLL sentence: {}", buffer);
+    }
+}
+
+void GPS::processGSA(const char *buffer,
+                     const std::string &nmeaWithoutNewLine,
+                     GpsState &stateToUpdate,
+                     GpsUpdateList &gpsUpdates) {
+    minmea_sentence_gsa frame{};
+    if (minmea_parse_gsa(&frame, buffer)) {
+        gpsUpdates.emplace_back(SatellitesUpdate{
+            nmeaWithoutNewLine,
+            0,
+            minmea_tofloat(&frame.hdop)
+        });
+    } else {
+        spdlog::error("Failed to parse GSA sentence: {}", buffer);
+    }
+}
+
+void GPS::processVTG(const char *buffer,
+                     const std::string &nmeaWithoutNewLine,
+                     GpsState &stateToUpdate,
+                     GpsUpdateList &gpsUpdates) {
+    minmea_sentence_vtg frame{};
+    if (minmea_parse_vtg(&frame, buffer)) {
+        stateToUpdate.speed = minmea_tofloat(&frame.speed_kph);
+
+        gpsUpdates.emplace_back(SpeedUpdate{
+            nmeaWithoutNewLine,
+            minmea_tofloat(&frame.speed_kph)
+        });
+    } else {
+        spdlog::error("Failed to parse VTG sentence: {}", buffer);
+    }
+}
+
 std::string GPS::removeNewLineCharacter(char *arr) {
     auto nmeaStr = std::string(arr);
     nmeaStr.erase(nmeaStr.size() - 1);
