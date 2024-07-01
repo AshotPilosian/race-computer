@@ -4,7 +4,6 @@
 #include <cstdint>
 #include <cstring>
 #include <span>
-#include <unistd.h>
 
 #include "spdlog/spdlog.h"
 #include "minmea.h"
@@ -17,14 +16,6 @@ GPS::GPS(): uartFd(-100),
             nmeaBufferCurrentIdx(0),
             nmeaBufferStartValid(false),
             currentState({}) {
-}
-
-void GPS::writeCommandToModule(const std::span<const unsigned char> commandBytes) const {
-    for (unsigned char ch: commandBytes) {
-        spdlog::trace("Writing command char: {}", ch);
-        wiringXSerialPutChar(uartFd, ch);
-    }
-    std::this_thread::sleep_for(std::chrono::milliseconds(50));
 }
 
 void GPS::setup() {
@@ -76,64 +67,12 @@ void GPS::setup() {
     spdlog::info("GPS UART setup completed. FD: {}", uartFd);
 }
 
-int GPS::openUartToGpsModule(const unsigned int baudRate) {
-    const wiringXSerial_t wiringXSerial = {baudRate, 8, 'n', 1, 'n'};
-    int fd;
-
-    if ((fd = wiringXSerialOpen("/dev/ttyS1", wiringXSerial)) < 0) {
-        spdlog::critical("Open serial device failed: {}", fd);
-        wiringXGC();
-
-        throw std::runtime_error("Can not open GPS UART.");
-    }
-
-    return fd;
-}
-
 void GPS::shutdown() const {
     spdlog::info("Closing GPS connection");
 
     wiringXSerialClose(uartFd);
 
     spdlog::info("GPS connection closed");
-}
-
-uint8_t GPS::calculateChecksum(const char *sentence) {
-    uint8_t checksum = 0;
-
-    // Skip the initial '$' character
-    sentence++;
-
-    // XOR each character until the '*' character or the end of the string
-    while (*sentence && *sentence != '*') {
-        checksum ^= *sentence;
-        sentence++;
-    }
-
-    return checksum;
-}
-
-std::optional<uint8_t> GPS::extractChecksum(const char *sentence) {
-    // Find the '*' character in the sentence
-    const char *checksumStr = strchr(sentence, '*');
-    if (checksumStr == nullptr || strlen(checksumStr) < 3) {
-        // '*' not found or not enough characters after '*' for checksum
-        return std::nullopt;
-    }
-
-    // Extract the checksum string and convert it to an integer
-    return static_cast<uint8_t>(strtol(checksumStr + 1, nullptr, 16));
-}
-
-bool GPS::validateChecksum(const char *sentence) {
-    const std::optional<uint8_t> extractedChecksum = extractChecksum(sentence);
-    if (!extractedChecksum.has_value()) {
-        return false;
-    }
-
-    const uint8_t calculatedChecksum = calculateChecksum(sentence);
-
-    return calculatedChecksum == extractedChecksum.value();
 }
 
 void GPS::readAvailable() {
@@ -318,9 +257,70 @@ std::optional<GpsUpdateList> GPS::getUnprocessedUpdates() {
     return std::nullopt;
 }
 
+// Private
 std::string GPS::removeNewLineCharacter(char *arr) {
     auto nmeaStr = std::string(arr);
     nmeaStr.erase(nmeaStr.size() - 1);
 
     return nmeaStr;
+}
+
+void GPS::writeCommandToModule(const std::span<const unsigned char> commandBytes) const {
+    for (unsigned char ch: commandBytes) {
+        spdlog::trace("Writing command char: {}", ch);
+        wiringXSerialPutChar(uartFd, ch);
+    }
+    std::this_thread::sleep_for(std::chrono::milliseconds(50));
+}
+
+int GPS::openUartToGpsModule(const unsigned int baudRate) {
+    const wiringXSerial_t wiringXSerial = {baudRate, 8, 'n', 1, 'n'};
+    int fd;
+
+    if ((fd = wiringXSerialOpen("/dev/ttyS1", wiringXSerial)) < 0) {
+        spdlog::critical("Open serial device failed: {}", fd);
+        wiringXGC();
+
+        throw std::runtime_error("Can not open GPS UART.");
+    }
+
+    return fd;
+}
+
+uint8_t GPS::calculateChecksum(const char *sentence) {
+    uint8_t checksum = 0;
+
+    // Skip the initial '$' character
+    sentence++;
+
+    // XOR each character until the '*' character or the end of the string
+    while (*sentence && *sentence != '*') {
+        checksum ^= *sentence;
+        sentence++;
+    }
+
+    return checksum;
+}
+
+std::optional<uint8_t> GPS::extractChecksum(const char *sentence) {
+    // Find the '*' character in the sentence
+    const char *checksumStr = strchr(sentence, '*');
+    if (checksumStr == nullptr || strlen(checksumStr) < 3) {
+        // '*' not found or not enough characters after '*' for checksum
+        return std::nullopt;
+    }
+
+    // Extract the checksum string and convert it to an integer
+    return static_cast<uint8_t>(strtol(checksumStr + 1, nullptr, 16));
+}
+
+bool GPS::validateChecksum(const char *sentence) {
+    const std::optional<uint8_t> extractedChecksum = extractChecksum(sentence);
+    if (!extractedChecksum.has_value()) {
+        return false;
+    }
+
+    const uint8_t calculatedChecksum = calculateChecksum(sentence);
+
+    return calculatedChecksum == extractedChecksum.value();
 }

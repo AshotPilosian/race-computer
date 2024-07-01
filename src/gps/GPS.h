@@ -27,17 +27,17 @@ class GPS {
     static int openUartToGpsModule(unsigned int baudRate);
 
 public:
-    GPS();
-
     GpsState currentState{};
 
+    GPS();
+
     void setup();
+
+    void shutdown() const;
 
     void readAvailable();
 
     std::optional<GpsUpdateList> getUnprocessedUpdates();
-
-    void shutdown() const;
 };
 
 
