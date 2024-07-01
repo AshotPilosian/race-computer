@@ -19,7 +19,7 @@ public:
 
     void setup();
 
-    void writeToFile(const std::string &message) const;
+    void writeToFile(std::string message) const;
 };
 
 
