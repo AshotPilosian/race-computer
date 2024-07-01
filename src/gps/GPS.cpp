@@ -119,7 +119,8 @@ void GPS::readAvailable() {
                 nmeaBuffer[nmeaBufferCurrentIdx] = '\0';
                 if (nmeaBufferStartValid) {
                     if (validateChecksum(nmeaBuffer)) {
-                        spdlog::trace("NMEA: {}", nmeaBuffer);
+                        auto nmeaWithoutNewLineChar = removeNewLineCharacter(nmeaBuffer);
+                        spdlog::debug("NMEA: {}", nmeaWithoutNewLineChar);
 
                         switch (minmea_sentence_id(nmeaBuffer, false)) {
                             case MINMEA_SENTENCE_VTG: {
@@ -128,7 +129,8 @@ void GPS::readAvailable() {
                                     currentState.speed = minmea_tofloat(&frame.speed_kph);
 
                                     updates.emplace_back(SpeedUpdate{
-                                        std::string(nmeaBuffer), minmea_tofloat(&frame.speed_kph)
+                                        nmeaWithoutNewLineChar,
+                                        minmea_tofloat(&frame.speed_kph)
                                     });
                                 } else {
                                     spdlog::error("Failed to parse VTG sentence: {}", nmeaBuffer);
@@ -140,7 +142,9 @@ void GPS::readAvailable() {
                                 minmea_sentence_gsa frame{};
                                 if (minmea_parse_gsa(&frame, nmeaBuffer)) {
                                     updates.emplace_back(SatellitesUpdate{
-                                        std::string(nmeaBuffer), 0, minmea_tofloat(&frame.hdop)
+                                        nmeaWithoutNewLineChar,
+                                        0,
+                                        minmea_tofloat(&frame.hdop)
                                     });
                                 } else {
                                     spdlog::error("Failed to parse GSA sentence: {}", nmeaBuffer);
@@ -152,7 +156,7 @@ void GPS::readAvailable() {
                                 minmea_sentence_gll frame{};
                                 if (minmea_parse_gll(&frame, nmeaBuffer)) {
                                     updates.emplace_back(PositionUpdate{
-                                        std::string(nmeaBuffer),
+                                        nmeaWithoutNewLineChar,
                                         false,
                                         minmea_tocoord(&frame.latitude),
                                         minmea_tocoord(&frame.longitude)
@@ -184,7 +188,7 @@ void GPS::readAvailable() {
                                     // currentState.speed = minmea_tofloat(&frame.speed);
 
                                     updates.emplace_back(PositionUpdate{
-                                        std::string(nmeaBuffer),
+                                        nmeaWithoutNewLineChar,
                                         frame.valid,
                                         minmea_tocoord(&frame.latitude),
                                         minmea_tocoord(&frame.longitude)
@@ -212,7 +216,7 @@ void GPS::readAvailable() {
                                     currentState.microseconds = frame.time.microseconds;
 
                                     updates.emplace_back(PositionUpdate{
-                                        std::string(nmeaBuffer),
+                                        nmeaWithoutNewLineChar,
                                         frame.fix_quality > 0,
                                         minmea_tocoord(&frame.latitude),
                                         minmea_tocoord(&frame.longitude)
@@ -280,4 +284,11 @@ std::optional<GpsUpdateList> GPS::getUnprocessedUpdates() {
     }
 
     return std::nullopt;
+}
+
+std::string GPS::removeNewLineCharacter(char *arr) {
+    auto nmeaStr = std::string(arr);
+    nmeaStr.erase(nmeaStr.size() - 1);
+
+    return nmeaStr;
 }

@@ -32,9 +32,9 @@ struct SatellitesUpdate : GpsUpdateBase {
 
 struct GpsState {
     bool hasFix{};
-    int fixQuality{};
-    int numberOfSatellites{};
-    float hdop{};
+    int fixQuality{-1};
+    int numberOfSatellites{-1};
+    float hdop{-1};
 
     int gpsSats{-1};
     int glonassSats{-1};
@@ -42,19 +42,19 @@ struct GpsState {
     int beidouSats{-1};
     int qzssSats{-1};
 
-    int day{};
-    int month{};
-    int year{};
+    int day{-1};
+    int month{-1};
+    int year{-1};
 
-    int hours{};
-    int minutes{};
-    int seconds{};
-    int microseconds{};
+    int hours{-1};
+    int minutes{-1};
+    int seconds{-1};
+    int microseconds{-1};
 
-    float latitude{};
-    float longitude{};
+    float latitude{-1};
+    float longitude{-1};
 
-    float speed{};
+    float speed{-1};
 };
 
 using GpsUpdate = std::variant<PositionUpdate, TimeUpdate, SpeedUpdate, SatellitesUpdate>;

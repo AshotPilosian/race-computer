@@ -17,7 +17,7 @@ void SimpleLapTimerInfoPanel::update(const LapTimerUpdateData *data) const {
 
     std::ostringstream oss;
 
-    oss << "Lap: " << std::setw(2) << std::setfill(' ') << data->lapCounter;
+    oss << "Lap: " << std::setw(4) << std::setfill(' ') << data->lapCounter;
     lv_label_set_text(widget.lapCounterLabel, oss.str().c_str());
 
     oss.str("");

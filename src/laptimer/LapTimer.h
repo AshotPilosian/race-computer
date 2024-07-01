@@ -30,11 +30,11 @@ public:
                                                               startLon1(startLon1),
                                                               startLat2(startLat2),
                                                               startLon2(startLon2),
-                                                              lapCounter(0),
+                                                              lapCounter(-1),
                                                               lastLat(0.0),
                                                               lastLon(0.0),
                                                               firstPosition(true),
-                                                              latestDistance(0.0) {
+                                                              latestDistance(-1.0) {
     }
 
     void addPosition(double latitude, double longitude);
