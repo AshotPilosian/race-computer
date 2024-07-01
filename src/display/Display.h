@@ -3,18 +3,21 @@
 
 #include <atomic>
 #include <thread>
+#include <mutex>
 
 class Display {
     std::thread lvglThread;
     std::atomic<bool> running;
 
-    void lvglMainLoop() const;
+    void lvglMainLoop();
 
     void initLvgl();
 
     static void resetScreenColor(void *arg);
 
 public:
+    std::mutex lvgl_mutex;
+
     Display();
 
     bool initialized;

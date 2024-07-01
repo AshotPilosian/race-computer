@@ -9,9 +9,12 @@
 Display::Display(): running(false), initialized(false) {
 }
 
-auto Display::lvglMainLoop() const -> void {
+auto Display::lvglMainLoop() -> void {
     while (running) {
+        lvgl_mutex.lock();
         lv_timer_handler();
+        lvgl_mutex.unlock();
+
         std::this_thread::sleep_for(std::chrono::milliseconds(5));
     }
 }

@@ -46,7 +46,9 @@ void SectorTimesLayout::update(const SectorTimeLayoutUpdateData *updateData) con
         new SimpleLapTimerInfoPanelUpdateData(lapTimerPanel, &(updateData->lapTimerInfo))
     };
 
+    display->lvgl_mutex.lock();
     lv_async_call(doUpdate, data);
+    display->lvgl_mutex.unlock();
 
     spdlog::trace("SectorTimesLayout::update -- Update scheduled");
 }
